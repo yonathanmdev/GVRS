@@ -1,16 +1,45 @@
+# Build / vendor artifacts
 /public/dist
 /public/plugins
-# Ignore everything inside the folder named 'myfolder'
-material/
 vendor/
-storage/
-# Ignore main .htaccess at project root
-/.htaccess
+node_modules/
 
-# Ignore public folder .htaccess
+# App-specific
+material/
+storage/
+
+# Web server config (kept out of git - environment-specific)
+/.htaccess
 /public/.htaccess
+
+# Secrets / environment
 .env
+.env.*
+!.env.example
+
+# Database dumps
 *.sql
+
+# Misc project files not meant for version control
 extensions.txt
 AUDIT_LOGGING_README.md
+
+# Docs - ignored by default, README explicitly kept
 *.md
+!README.md
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs (in case anything logs outside storage/)
+*.log
+
+# Archives from local build/deploy steps
+*.zip
+*.tar.gz
