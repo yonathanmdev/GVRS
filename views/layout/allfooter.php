@@ -112,6 +112,10 @@ function myAsset($path) {
 
       <?php if (isset($is_vehicle_page) && $is_vehicle_page === true): ?>
     <script src="<?= myAsset('js/vehicle-form.js') ?>"></script>
+    <script src="<?= myAsset('js/vehicle-type-cascade.js') ?>"></script>
+    <?php endif; ?>
+          <?php if (isset($is_vehicles_list_page) && $is_vehicles_list_page === true): ?>
+    <script src="<?= myAsset('js/delete-vehicle.js') ?>"></script>
     <?php endif; ?>
     
  <?php if (isset($is_branch_deleted_page) && $is_branch_deleted_page === true): ?>

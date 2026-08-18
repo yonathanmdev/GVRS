@@ -51,7 +51,9 @@ return [
     'register-vehicle'              => ['VehicleController', 'index', true],
     'vehicles-institutions'         => ['VehicleController', 'institutions', true],
     'vehicles-woredas'              => ['VehicleController', 'woredas', true],
+    'vehicles-car-types'            => ['VehicleController', 'carTypesByBrand', true],
     'vehicles-store'      => ['VehicleController', 'store', true],
+    'vehicles-list'       => ['VehicleController', 'list', true],
     'edit-vehicle'                  => ['VehicleController', 'getVehicleById', true],
     // Audit Logs
     'audit-logs'         => ['AuditController', 'index', true],

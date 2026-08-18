@@ -216,59 +216,83 @@
 
 // ---- submit + partial reset ------------------------------------------
 
-    const finalSubmitBtn = document.getElementById('vehicle-final-submit-btn');
+const finalSubmitBtn = document.getElementById('vehicle-final-submit-btn');
+const manufacturedYear = document.getElementById('manufactured_year');
+const purchaseYear = document.getElementById('purchase_year');
 
-    form.addEventListener('submit', function (e) {
-        e.preventDefault();
+function validatePurchaseYear() {
+    const mfgVal = parseInt(manufacturedYear.value, 10);
+    const purVal = parseInt(purchaseYear.value, 10);
 
-        if (!branchIdInput.value) {
-            return;
-        }
+    if (!isNaN(mfgVal) && !isNaN(purVal) && purVal < mfgVal) {
+        purchaseYear.setCustomValidity('የተገዛበት ዓ.ም ከተመረተበት ዓ.ም በፊት ሊሆን አይችልም');
+    } else {
+        purchaseYear.setCustomValidity('');
+    }
+}
 
-        // Run native HTML5 validation (required fields etc.) and show the
-        // browser's built-in messages if something's missing. Button stays
-        // enabled the whole time — the user can fix the field immediately.
-        if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
-        }
+manufacturedYear.addEventListener('input', validatePurchaseYear);
+purchaseYear.addEventListener('input', validatePurchaseYear);
 
-        const formData = new FormData(form);
+form.addEventListener('submit', function (e) {
+    e.preventDefault();
 
-        finalSubmitBtn.disabled = true;
-        setButtonLoading(finalSubmitBtn, true, 'በመላክ ላይ...');
+    if (!branchIdInput.value) {
+        return;
+    }
 
-        fetch(window.BASE_URL + '/vehicles-store', {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    if (window.Swal) {
-                        Swal.fire({ icon: 'success', text: data.message, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
-                    }
-                    // Only clear the vehicle-detail inputs.
-                    // Category, bureau/zone/institution/woreda selections
-                    // and branch_id stay exactly as they are, so the next
-                    // vehicle for the same office can be entered right away.
-                    fieldset.querySelectorAll('input').forEach(input => { input.value = ''; });
-                    fieldset.querySelectorAll('input[name="plate_number"], input[name="chassis_number"]')[0]?.focus();
-                } else {
-                    if (window.Swal) {
-                        Swal.fire({ icon: 'error', text: data.message || 'ስህተት ተፈጥሯል', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false });
-                    }
-                }
-            })
-            .catch(() => {
+    // Re-run the year check right before validity is checked, in case
+    // fields were filled out of order or via autofill without firing 'input'.
+    validatePurchaseYear();
+
+    // Run native HTML5 validation (required fields, min/max, and the
+    // custom purchase/manufactured year rule) and show the browser's
+    // built-in messages if something's missing. Button stays enabled
+    // the whole time — the user can fix the field immediately.
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+
+    const formData = new FormData(form);
+
+    finalSubmitBtn.disabled = true;
+    setButtonLoading(finalSubmitBtn, true, 'በመላክ ላይ...');
+
+    fetch(window.BASE_URL + '/vehicles-store', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
                 if (window.Swal) {
-                    Swal.fire({ icon: 'error', text: 'ግንኙነት ላይ ስህተት ተፈጥሯል', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false });
+                    Swal.fire({ icon: 'success', text: data.message, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
                 }
-            })
-            .finally(() => {
-                setButtonLoading(finalSubmitBtn, false);
-                finalSubmitBtn.disabled = false;
-            });
-    });
+                // Only clear the vehicle-detail inputs.
+                // Category, bureau/zone/institution/woreda selections
+                // and branch_id stay exactly as they are, so the next
+                // vehicle for the same office can be entered right away.
+                fieldset.querySelectorAll('input').forEach(input => {
+                    input.value = '';
+                    input.setCustomValidity(''); // clear any leftover custom error before next entry
+                });
+                fieldset.querySelectorAll('input[name="plate_number"], input[name="chassis_number"]')[0]?.focus();
+            } else {
+                if (window.Swal) {
+                    Swal.fire({ icon: 'error', text: data.message || 'ስህተት ተፈጥሯል', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false });
+                }
+            }
+        })
+        .catch(() => {
+            if (window.Swal) {
+                Swal.fire({ icon: 'error', text: 'ግንኙነት ላይ ስህተት ተፈጥሯል', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false });
+            }
+        })
+        .finally(() => {
+            setButtonLoading(finalSubmitBtn, false);
+            finalSubmitBtn.disabled = false;
+        });
+});
 })();
