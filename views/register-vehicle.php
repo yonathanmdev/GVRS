@@ -1596,6 +1596,83 @@ $is_vehicle_page = true;
                                                 <div class="form-group col-md-4">
 
                                                     <label>
+                                                        ብራንድ
+                                                        <span class="required-mark">*</span>
+                                                    </label>
+
+                                                    <select class="form-control"
+                                                            id="car_brand_select"
+                                                            data-loads="#car_type_select"
+                                                            data-endpoint="/vehicles-car-types"
+                                                            data-param="brand"
+                                                            required>
+
+                                                        <option value=""
+                                                                disabled
+                                                                selected>
+                                                            ይምረጡ
+                                                        </option>
+
+                                                        <?php foreach ($brands as $brand): ?>
+
+                                                            <option value="<?= ViewHelper::e($brand['brand_id']) ?>">
+                                                                <?= ViewHelper::e($brand['brand_name']) ?>
+                                                            </option>
+
+                                                        <?php endforeach; ?>
+
+                                                    </select>
+
+                                                </div>
+
+
+                                                <div class="form-group col-md-4">
+
+                                                    <label>
+                                                  የተሽከርካሪው/ ማሽነሪው ዓይነት
+                                                        <span class="required-mark">*</span>
+                                                    </label>
+
+                                                    <select class="form-control"
+                                                            id="car_type_select"
+                                                            name="vehicle_type"
+                                                            required
+                                                            disabled>
+
+                                                        <option value=""
+                                                                disabled
+                                                                selected>
+                                                            መጀመሪያ ብራንድ ይምረጡ
+                                                        </option>
+
+                                                    </select>
+
+                                                </div>
+
+
+                                                <div class="form-group col-md-4">
+
+                                                    <label>
+                                                        የአገልግሎት ዓይነት 
+                                                        
+                                                    </label>
+
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           id="car_service_name_display"
+                                                           readonly
+                                                           tabindex="-1">
+
+                                                    <div class="field-hint">
+                                                        ከመረጡት ዓይነት ራሱ በራሱ ይሞላል
+                                                    </div>
+
+                                                </div>
+
+
+                                                <div class="form-group col-md-4">
+
+                                                    <label>
                                                         ሰሌዳ ቁጥር
                                                         <span class="required-mark">*</span>
                                                     </label>
@@ -1607,30 +1684,11 @@ $is_vehicle_page = true;
                                                            required>
 
                                                 </div>
-
-
-                                                <div class="form-group col-md-4">
-
-                                                    <label>
-                                                        የመኪናው/ማሽነሪ ዓይነት
-                                                        <span class="required-mark">*</span>
-                                                    </label>
-
-                                                    <input type="text"
-                                                           class="form-control"
-                                                           name="vehicle_type"
-                                                           id="vehicle_type"
-                                                           placeholder="ለምሳሌ፦ የጭነት"
-                                                           required>
-
-                                                </div>
-
-
                                                 <div class="form-group col-md-4">
 
                                                     <label>
                                                         ሞዴል
-                                                        <span class="required-mark">*</span>
+                                                     
                                                     </label>
 
                                                     <input type="text"
@@ -1638,28 +1696,28 @@ $is_vehicle_page = true;
                                                            name="model"
                                                            id="model"
                                                            placeholder="ለምሳሌ፦ 2019"
-                                                           required>
+                                                           >
 
                                                 </div>
 
 
-                                                <div class="form-group col-md-6">
+                                                <div class="form-group col-md-4">
 
                                                     <label>
                                                         ቻንሲ ቁጥር
-                                                        <span class="required-mark">*</span>
+                                                       
                                                     </label>
 
                                                     <input type="text"
                                                            class="form-control"
                                                            name="chassis_number"
                                                            placeholder="የቻንሲ ቁጥር ያስገቡ"
-                                                           required>
+                                                           >
 
                                                 </div>
 
 
-                                                <div class="form-group col-md-6">
+                                                <div class="form-group col-md-4">
 
                                                     <label>
                                                         የሞተር ቁጥር
@@ -1711,28 +1769,46 @@ $is_vehicle_page = true;
 
                                             <div class="form-row">
 
-                                                <div class="form-group col-md-6">
+                     
+
+
+                                                <div class="form-group col-md-2">
+
+                                                    <label>
+                                                        መለኪያ 
+                                                        
+                                                    </label>
+
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           id="car_measurement_display"
+                                                           readonly
+                                                           tabindex="-1">
+
+                                                </div>
+
+                           <div class="form-group col-md-4">
 
                                                     <label>
                                                         የመጫን አቅም
+                                                         <span class="required-mark">*</span>
                                                     </label>
 
                                                     <input type="text"
                                                            class="form-control"
                                                            name="capacity"
-                                                           placeholder="ለምሳሌ፦ 5 ኩንታል">
+                                                           placeholder="ለምሳሌ፦ 5 ኩንታል" required>
 
                                                     <div class="field-hint">
                                                         በኩንታል / በሰው / በፈረስ ጉልበት ይግለጹ
                                                     </div>
 
                                                 </div>
-
-
                                                 <div class="form-group col-md-6">
 
                                                     <label>
-                                                        ተሽከርካሪ/ማሽነሪ ግምታዊ ዋጋ
+                                                        ተሽከርካሪ/ማሽነሪ ግምታዊ ዋጋ 
+                                                         <span class="required-mark">*</span>
                                                     </label>
 
                                                     <div class="input-group">
@@ -1742,7 +1818,7 @@ $is_vehicle_page = true;
                                                                name="estimated_price"
                                                                step="any"
                                                                min="0"
-                                                               placeholder="1.5 ሚሊዮን">
+                                                               placeholder="1500000" required>
 
                                                         <div class="input-group-append">
                                                             <span class="input-group-text">
@@ -1758,15 +1834,17 @@ $is_vehicle_page = true;
                                                 <div class="form-group col-md-3">
 
                                                     <label>
-                                                        የተመረተበት ዓ.ም
+                                                        የተመረተበት ዓ.ም 
+                                                         <span class="required-mark">*</span>
                                                     </label>
 
                                                     <input type="number"
                                                            class="form-control"
                                                            name="manufactured_year"
+                                                           id="manufactured_year"
                                                            min="1950"
                                                           max="<?php echo date('Y'); ?>"
-                                                           placeholder="ዓ.ም">
+                                                           placeholder="ዓ.ም" require>
 
                                                 </div>
 
@@ -1774,15 +1852,17 @@ $is_vehicle_page = true;
                                                 <div class="form-group col-md-3">
 
                                                     <label>
-                                                        የተገዛበት ዓ.ም
+                                                        የተገዛበት ዓ.ም 
+                                                         <span class="required-mark">*</span>
                                                     </label>
 
                                                     <input type="number"
                                                            class="form-control"
                                                            name="purchase_year"
+                                                           id="purchase_year"
                                                            min="1950"
                                                           max="<?php echo date('Y'); ?>"
-                                                           placeholder="ዓ.ም">
+                                                           placeholder="ዓ.ም" required>
 
                                                 </div>
 
@@ -1790,11 +1870,12 @@ $is_vehicle_page = true;
                                                 <div class="form-group col-md-6">
 
                                                     <label>
-                                                        አሁናዊ ሁኔታ
+                                                        አሁናዊ ሁኔታ 
+                                                         <span class="required-mark">*</span>                            
                                                     </label>
 
                                                     <select class="form-control"
-                                                            name="vehicle_status">
+                                                            name="vehicle_status" required>
 
                                                         <option value=""
                                                                 selected

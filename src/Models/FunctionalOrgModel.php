@@ -266,7 +266,7 @@ public function getaccountableOfficesWithBureau(int $level, ?int $bureau_id = nu
                 b.id AS bureau_id, b.uuid AS bureau_uuid, b.name AS bureau_name, b.branch_type AS bureau_type
             FROM branches aco
             JOIN branches b ON b.id = aco.functional_parent_id
-            WHERE aco.branch_type IN ('authority','commission','institution','enterprise','memriya','tsfet_bet','college')
+            WHERE aco.branch_type IN ('authority','commission','institution','enterprise','tsfet_bet','college')
             AND aco.is_active <> 3
             AND aco.level = :level";
 

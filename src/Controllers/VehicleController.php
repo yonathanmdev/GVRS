@@ -36,10 +36,12 @@ class VehicleController extends BaseController
         $bureaus = $model->getAll($bureaulevel, $branchType);      
         $zones = $model->getAll($zonelevel, $zones_types);
         $memriya = $model->getAll($memriyalevel, $memriya_types);
+        $brands = (new VehicleModel($this->db))->getDistinctBrands();
         $this->render('register-vehicle', [
             'bureaus' => $bureaus,
             'zones' =>$zones,
             'memriya' => $memriya,
+            'brands' => $brands,
             'currentLang' => $currentLang
         ]);
     }
@@ -115,7 +117,44 @@ public function woredas(): void
 
     echo json_encode($options);
 }
+// --- add to create(): preload the brand list alongside bureaus/zones/memriya ---
+//
+// $carTypeModel = new CarTypeModel($this->db);
+// $carBrands = $carTypeModel->getDistinctBrands();
+// ...then pass $carBrands into the view alongside $bureaus, $memriya, $zones
 
+
+// GET /vehicles-car-types?brand=<brand>
+public function carTypesByBrand(): void
+{
+    AuthHelper::checkRole(['system_admin', 'officer']);
+    header('Content-Type: application/json');
+
+    $brand = trim($_GET['brand'] ?? '');
+
+    if ($brand === '') {
+        http_response_code(422);
+        echo json_encode(['error' => 'brand required']);
+        return;
+    }
+
+    $carTypeModel = new VehicleModel($this->db);
+    $rows = $carTypeModel->getTypesByBrand($brand);
+
+    // Return service_name/measurement alongside id/name so the frontend
+    // can populate the read-only fields directly on selection, no
+    // second AJAX call needed.
+    $options = array_map(function ($row) {
+        return [
+            'id'            => $row['car_type_id'],
+            'name'          => $row['type_name'],
+            'service_name'  => $row['service_name'],
+            'measurement'   => $row['measurement'],
+        ];
+    }, $rows);
+
+    echo json_encode($options);
+}
  public function store(): void
 {
     AuthHelper::checkRole(['system_admin', 'officer']);
@@ -153,6 +192,60 @@ public function woredas(): void
     $estimated_price   = trim($_POST['estimated_price'] ?? '');
     $purchase_year     = trim($_POST['purchase_year'] ?? '');
     $vehicle_status    = trim($_POST['vehicle_status'] ?? '');
+
+    // --- Required field validation ---
+    $requiredFields = [
+        'plate_number'      => $plate_number,
+        'vehicle_type'      => $vehicle_type,
+        'capacity'          => $capacity,
+        'manufactured_year' => $manufactured_year,
+        'estimated_price'   => $estimated_price,
+        'purchase_year'     => $purchase_year,
+        'vehicle_status'    => $vehicle_status,
+    ];
+
+    $errors = [];
+    foreach ($requiredFields as $field => $value) {
+        if ($value === '') {
+            $errors[$field] = \__('field_required');
+        }
+    }
+
+    // --- Year validation (only if the year fields are present) ---
+    $minYear = 1950;
+    $maxYear = (int) date('Y');
+
+    if ($manufactured_year !== '') {
+        $mfgYear = (int) $manufactured_year;
+        if ($mfgYear < $minYear || $mfgYear > $maxYear) {
+            $errors['manufactured_year'] = \__('invalid_manufactured_year');
+        }
+    }
+
+    if ($purchase_year !== '') {
+        $purYear = (int) $purchase_year;
+        if ($purYear < $minYear || $purYear > $maxYear) {
+            $errors['purchase_year'] = \__('invalid_purchase_year');
+        }
+    }
+
+    // Only compare the two years if both individually passed their own checks
+    if (!isset($errors['manufactured_year']) && !isset($errors['purchase_year'])
+        && $manufactured_year !== '' && $purchase_year !== ''
+        && (int) $purchase_year < (int) $manufactured_year
+    ) {
+        $errors['purchase_year'] = \__('purchase_year_before_manufactured');
+    }
+
+    if (!empty($errors)) {
+        http_response_code(422);
+        echo json_encode([
+            'success' => false,
+            'message' => \__('validation_failed'),
+            'errors'  => $errors
+        ]);
+        return;
+    }
 
     $orgModel  = new FunctionalOrgModel($this->db);
     $brachData = $orgModel->findById($branchId);
@@ -197,5 +290,34 @@ public function woredas(): void
     http_response_code(409);
     echo json_encode(['success' => false, 'message' => \__($e->getMessage())]);
 }
+}
+public function list(): void
+{
+    AuthHelper::checkRole(['system_admin', 'mgmt','officer']);
+
+    $page   = max(1, (int)($_GET['page'] ?? 1));
+    $limit  = 50;
+    $offset = ($page - 1) * $limit;
+
+    $search   = trim($_GET['search'] ?? '');
+    $branchId = !empty($_GET['branch_id']) ? (int) $_GET['branch_id'] : null;
+
+    $vehicleModel = new VehicleModel($this->db);
+    $vehicles     = $vehicleModel->getRegisteredVehicles($branchId, $limit, $offset, $search);
+    $totalCount   = $vehicleModel->countRegisteredVehicles($branchId, $search);
+    $totalPages   = (int) ceil($totalCount / $limit);
+
+    //$branchModel = new FunctionalOrgModel($this->db);
+    //$branches    = $branchModel->getAllForFilter();
+
+    $this->render('vehicles-list', [
+        'vehicles'       => $vehicles,
+        'selectedBranch' => $branchId,
+        'search'         => $search,
+        'page'           => $page,
+        'totalPages'     => $totalPages,
+        'totalCount'     => $totalCount,
+        'currentLang'    => $_SESSION['lang'] ?? 'am'
+    ]);
 }
 }
