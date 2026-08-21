@@ -1866,18 +1866,12 @@ function setButtonLoading(btn, isLoading, loadingText) {
 );
 
 
-    /* =========================================================
-       UPDATE TABLE ROW
-       ========================================================= */
-/* =========================================================
+ /* =========================================================
    UPDATE TABLE ROW IN PLACE
    ========================================================= */
 
 function updateRowInPlace(v) {
 
-    /*
-     * Make sure the server returned a valid vehicle.
-     */
     if (!v || !v.uuid) {
 
         console.warn(
@@ -1890,7 +1884,7 @@ function updateRowInPlace(v) {
 
 
     /*
-     * Find the existing table row.
+     * Find the existing row.
      */
     const row = document.getElementById(
         'row-' + v.uuid
@@ -1909,20 +1903,18 @@ function updateRowInPlace(v) {
 
 
     /*
-     * Get all cells in this row.
+     * Get all cells.
      */
     const cells = row.querySelectorAll('td');
 
 
     /*
-     * Make sure the expected table structure exists.
+     * Expected structure:
      *
-     * We need at least:
-     *
-     * 0 = number
-     * 1 = plate
+     * 0 = row number
+     * 1 = plate number
      * 2 = brand
-     * 3 = type
+     * 3 = vehicle type
      * 4 = model
      * 5 = branch
      * 6 = zone
@@ -1934,7 +1926,8 @@ function updateRowInPlace(v) {
     if (cells.length < 10) {
 
         console.warn(
-            'Unexpected vehicle table row structure.'
+            'Unexpected vehicle table row structure.',
+            cells.length
         );
 
         return;
@@ -1945,9 +1938,7 @@ function updateRowInPlace(v) {
        PLATE NUMBER
        ========================================================= */
 
-    if (
-        v.plate_number !== undefined
-    ) {
+    if (v.plate_number !== undefined) {
 
         cells[1].textContent =
             v.plate_number ?? '';
@@ -1956,20 +1947,9 @@ function updateRowInPlace(v) {
 
     /* =========================================================
        BRAND
-       =========================================================
-       
-       Your table displays:
-       
-       $vehicle['brand_name']
-       
-       Therefore the server must return:
-       
-       brand_name
-       */
+       ========================================================= */
 
-    if (
-        v.brand_name !== undefined
-    ) {
+    if (v.brand_name !== undefined) {
 
         cells[2].textContent =
             v.brand_name ?? '';
@@ -1978,19 +1958,26 @@ function updateRowInPlace(v) {
 
     /* =========================================================
        VEHICLE TYPE
-       =========================================================
-       
-       Your table displays:
-       
-       $vehicle['type_name']
-       */
+       ========================================================= */
 
-    if (
-        v.type_name !== undefined
-    ) {
+    if (v.type_name !== undefined) {
 
         cells[3].textContent =
             v.type_name ?? '';
+    }
+
+
+    /*
+     * Some queries may return vehicle_type_name instead
+     * of type_name. Support both without changing your
+     * existing table.
+     */
+    else if (
+        v.vehicle_type_name !== undefined
+    ) {
+
+        cells[3].textContent =
+            v.vehicle_type_name ?? '';
     }
 
 
@@ -1998,9 +1985,7 @@ function updateRowInPlace(v) {
        MODEL
        ========================================================= */
 
-    if (
-        v.model !== undefined
-    ) {
+    if (v.model !== undefined) {
 
         cells[4].textContent =
             v.model ?? '';
@@ -2011,9 +1996,7 @@ function updateRowInPlace(v) {
        BRANCH
        ========================================================= */
 
-    if (
-        v.branch_name !== undefined
-    ) {
+    if (v.branch_name !== undefined) {
 
         cells[5].textContent =
             v.branch_name ?? '';
@@ -2024,9 +2007,7 @@ function updateRowInPlace(v) {
        ZONE
        ========================================================= */
 
-    if (
-        v.zone_name !== undefined
-    ) {
+    if (v.zone_name !== undefined) {
 
         cells[6].textContent =
             v.zone_name ?? '';
@@ -2037,9 +2018,7 @@ function updateRowInPlace(v) {
        MANUFACTURED YEAR
        ========================================================= */
 
-    if (
-        v.manufactured_year !== undefined
-    ) {
+    if (v.manufactured_year !== undefined) {
 
         cells[7].textContent =
             v.manufactured_year ?? '';
@@ -2050,9 +2029,7 @@ function updateRowInPlace(v) {
        PURCHASE YEAR
        ========================================================= */
 
-    if (
-        v.purchase_year !== undefined
-    ) {
+    if (v.purchase_year !== undefined) {
 
         cells[8].textContent =
             v.purchase_year ?? '';
@@ -2063,42 +2040,98 @@ function updateRowInPlace(v) {
        VEHICLE STATUS
        ========================================================= */
 
-    if (
-        v.vehicle_status !== undefined
-    ) {
+    if (v.vehicle_status !== undefined) {
 
-        updateVehicleStatusCell(
-            cells[9],
-            v.vehicle_status
-        );
+        const status =
+            v.vehicle_status ?? '';
+
+
+        /*
+         * Same labels as your PHP table.
+         */
+        const statusMap = {
+
+            active:
+                'በአገልግሎት ላይ',
+
+            lost:
+                'የጠፋ',
+
+            destroyed:
+                'የወደመ',
+
+            disposed:
+                'የተወገደ'
+        };
+
+
+        /*
+         * Same Bootstrap badge classes as your PHP table.
+         */
+        const badgeMap = {
+
+            active:
+                'success',
+
+            lost:
+                'warning',
+
+            destroyed:
+                'danger',
+
+            disposed:
+                'secondary'
+        };
+
+
+        const statusText =
+            statusMap[status] ?? status;
+
+
+        const badgeClass =
+            badgeMap[status] ?? 'secondary';
+
+
+        /*
+         * Escape the text before inserting it into HTML.
+         */
+        const safeStatusText =
+            String(statusText)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+
+
+        cells[9].innerHTML =
+            '<span class="badge badge-' +
+            badgeClass +
+            '">' +
+            safeStatusText +
+            '</span>';
     }
 
 
     /* =========================================================
-       OPTIONAL DATA ATTRIBUTES
+       UPDATE ROW DATA ATTRIBUTES
        ========================================================= */
 
-    if (
-        v.brand_id !== undefined
-    ) {
+    if (v.brand_id !== undefined) {
 
         row.dataset.brandId =
             v.brand_id;
     }
 
 
-    if (
-        v.vehicle_type_id !== undefined
-    ) {
+    if (v.vehicle_type_id !== undefined) {
 
         row.dataset.vehicleTypeId =
             v.vehicle_type_id;
     }
 
 
-    if (
-        v.vehicle_status !== undefined
-    ) {
+    if (v.vehicle_status !== undefined) {
 
         row.dataset.vehicleStatus =
             v.vehicle_status;
@@ -2125,6 +2158,5 @@ function updateRowInPlace(v) {
         1500
     );
 }
-
 });
 </script>
