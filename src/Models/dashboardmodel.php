@@ -171,7 +171,7 @@ public function getbytype($parentId): array
 public function getDynamicVehicleReport($filters): array
 {
     // 1. መጀመሪያ በ cartypelist ውስጥ ያሉትን የကား አይነቶች በሙሉ እናመጣለን
-    $typesStmt = $this->db->query("SELECT id, cartype FROM cartypelist ORDER BY id ASC");
+    $typesStmt = $this->db->query("SELECT car_type_id AS id, type_name as cartype FROM view_car_details ORDER BY id ASC");
     $carTypes = $typesStmt->fetchAll(PDO::FETCH_ASSOC);
 
     // 2. የ SQL ኪዩሪውን መሠረት እንገነባለን
@@ -276,6 +276,112 @@ public function getDynamicVehicleReport($filters): array
     ];
 }
 
+
+public function getServiceYearReport($filters): array
+{
+    // 1. የዘንድሮውን ዓመት እናገኛለን (የተሽከርካሪውን ዕድሜ ለማስላት)
+    $currentYear = date('Y');
+
+    // 2. የ SQL ኪዩሪውን መሠረት እንገነባለን
+    // ማስታወሻ፡ በዳታቤዝዎ ውስጥ የተሽከርካሪው የተመረተበት ዓመት የተመዘገበው በ `manufactured_year` ነው ብለን አስበናል። 
+    // የእርስዎ ኮለም ስም የተለየ ከሆነ (ለምሳሌ፡ `model_year` ወይም `purchase_year`) እባክዎ ከታች ባለው ኮድ ላይ ይቀይሩት።
+    $sql = "SELECT 
+        b.id AS branch_id,
+        b.uuid AS branch_uuid,
+        b.name AS branch_name,
+        b.branch_type,
+        
+        -- የአገልግሎት ዘመን ምድቦች (Service Years Categories)
+        SUM(CASE WHEN ($currentYear - v.manufactured_year) <= 5 THEN 1 ELSE 0 END) AS years_0_to_5,
+        SUM(CASE WHEN ($currentYear - v.manufactured_year) BETWEEN 6 AND 15 THEN 1 ELSE 0 END) AS years_6_to_15,
+        SUM(CASE WHEN ($currentYear - v.manufactured_year) BETWEEN 16 AND 25 THEN 1 ELSE 0 END) AS years_16_to_25,
+        SUM(CASE WHEN ($currentYear - v.manufactured_year) BETWEEN 26 AND 35 THEN 1 ELSE 0 END) AS years_26_to_35,
+        SUM(CASE WHEN ($currentYear - v.manufactured_year) >= 36 THEN 1 ELSE 0 END) AS years_36_plus
+        
+        FROM branches b
+        LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1
+        WHERE b.is_active = 1";
+
+    $params = [];
+
+    // 3. ሬዲዮ በተኑ (report_type) የተመረጠ መሆኑን ማረጋገጥ
+    $r_type = trim($filters['report_type'] ?? '');
+    $secondSelect = $filters['second_select'] ?? 'all';
+
+    // ሬዲዮ በተኑ ከተመረጠ ብቻ ማጣሪያውን እንጨምራለን፤ ካልተመረጠ (ባዶ ከሆነ) ይዘለላል (ሁሉንም ያመጣል)
+    if ($r_type !== '' && $r_type !== 'all') {
+        switch ($r_type) {
+            case 'regional': 
+                $sql .= " AND b.level = 1 AND b.functional_path IS NOT NULL AND b.functional_path != ''";
+                if ($secondSelect !== 'all' && $secondSelect !== '') {
+                    $sql .= " AND b.id = :second_select";
+                    $params['second_select'] = $secondSelect;
+                }
+                break;
+
+            case 'agency': 
+                $sql .= " AND b.level = 2 AND b.functional_path IS NOT NULL AND b.functional_path != ''";
+                if ($secondSelect !== 'all' && $secondSelect !== '') {
+                    $sql .= " AND b.functional_parent_id = :second_select";
+                    $params['second_select'] = $secondSelect;
+                }
+                break;
+
+            case 'department': 
+                $sql .= " AND b.level = 2 AND b.branch_type = 'memriya' AND b.functional_path IS NOT NULL AND b.functional_path != ''";
+                if ($secondSelect !== 'all' && $secondSelect !== '') {
+                    $sql .= " AND b.functional_parent_id = :second_select";
+                    $params['second_select'] = $secondSelect;
+                }
+                break;
+
+            case 'zone': 
+                $sql .= " AND b.level = 1 AND b.admin_path IS NOT NULL AND b.admin_path != ''";
+                if ($secondSelect !== 'all' && $secondSelect !== '') {
+                    $sql .= " AND b.id = :second_select";
+                    $params['second_select'] = $secondSelect;
+                }
+                break;
+
+            case 'wereda': 
+                $sql .= " AND b.level = 2 AND b.admin_path IS NOT NULL AND b.admin_path != ''";
+                if ($secondSelect !== 'all' && $secondSelect !== '') {
+                    $sql .= " AND b.admin_parent_id = :second_select";
+                    $params['second_select'] = $secondSelect;
+                }
+                break;
+
+            case 'calls': 
+                if ($secondSelect !== 'all' && $secondSelect !== '') {
+                    $sql .= " AND b.branch_type = :second_select";
+                    $params['second_select'] = $secondSelect;
+                }
+                break;
+        }
+    }
+
+    // 4. ሌሎች ተጨማሪ ማጣሪያዎች (third_select እና fourth_select)
+    if (!empty($filters['third_select']) && $filters['third_select'] !== 'all') {
+        $sql .= " AND b.id = :third_select";
+        $params['third_select'] = $filters['third_select'];
+    }
+
+    if (!empty($filters['fourth_select']) && $filters['fourth_select'] !== 'all') {
+        $sql .= " AND b.branch_type = :fourth_select";
+        $params['fourth_select'] = $filters['fourth_select'];
+    }
+
+    // መረጃውን በቅርንጫፍ (Branch) ማሰባሰብ
+    $sql .= " GROUP BY b.id, b.uuid, b.name, b.branch_type ORDER BY b.name ASC";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute($params);
+    
+    // ለ report2_view በቀጥታ የሚነበበውን ዳታ እንመልሳለን
+    return [
+        'report_data' => $stmt->fetchAll(PDO::FETCH_ASSOC)
+    ];
+}
 
 public function getVehicleReportAdvanced($filters): array
 {

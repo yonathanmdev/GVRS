@@ -141,7 +141,7 @@ public function report1controller(): void
     $thirdSelect  = $_GET['third_select'] ?? '';
     $fourthSelect = $_GET['fourth_select'] ?? '';
 
-    // --- 🔍 የዲባግ ማረጋገጫ ስክሪን ---
+    /* --- 🔍 የዲባግ ማረጋገጫ ስክሪን ---
     echo "<div style='background:#111; color:#0f0; padding:12px; margin:10px; font-family:monospace; z-index:9999; position:relative;'>";
     echo "<h3>--- ዴቨሎፐር ዲባግ ስክሪን (Report 1) ---</h3>";
     echo "የተቀበለው ሪኬስት ዓይነት (Request Method): " . $_SERVER['REQUEST_METHOD'] . "<br>";
@@ -150,7 +150,7 @@ public function report1controller(): void
     echo "የተያዘው third_select ቫልዩ: [ <b>" . ($thirdSelect ?: 'ባዶ ነው') . "</b> ]<br>";
     echo "የተያዘው fourth_select ቫልዩ: [ <b>" . ($fourthSelect ?: 'ባዶ ነው') . "</b> ]<br>";
     echo "</div>";
-    // ----------------------------------------------------
+    // ----------------------------------------------------*/
 
     // 2. 1ኛው ሳጥን ሲመረጥ 2ተኛውን ዝርዝር እናመጣለን
     if ($reportType === 'regional') {
@@ -256,6 +256,141 @@ public function report1controller(): void
 
     // ሪፖርት 1 ቪው ፋይልን እንጠራዋለን
     $this->renderPrintable('report1_view', $data);
+}
+
+
+public function report2controller(): void
+{
+    AuthHelper::checkRole(['system_admin', 'admin', 'mgmt', 'officer']);
+    
+    $currentLang = $_SESSION['lang'] ?? 'am';
+    $branchModel = new dashboardmodel($this->db);
+
+    $secondList  = [];
+    $thirdList   = [];
+    $fourthList  = [];
+    $reportData  = [];
+
+    // 1. መረጃዎች ከ URL (GET) መምጣቱን እንቀበላለን
+    $reportType   = $_GET['report_type'] ?? '';
+    $secondSelect = $_GET['second_select'] ?? '';
+    $thirdSelect  = $_GET['third_select'] ?? '';
+    $fourthSelect = $_GET['fourth_select'] ?? '';
+
+    /* --- 🔍 የዲባግ ማረጋገጫ ስክሪን ---
+    echo "<div style='background:#111; color:#0f0; padding:12px; margin:10px; font-family:monospace; z-index:9999; position:relative;'>";
+    echo "<h3>--- ዴቨሎፐር ዲባግ ስክሪን (Report 2 - ሠ2) ---</h3>";
+    echo "የተቀበለው ሪኬስት ዓይነት (Request Method): " . $_SERVER['REQUEST_METHOD'] . "<br>";
+    echo "የተያዘው report_type ቫልዩ: [ <b>" . ($reportType ?: 'ባዶ ነው (አልተመረጠም)') . "</b> ]<br>";
+    echo "የተያዘው second_select ቫልዩ: [ <b>" . ($secondSelect ?: 'ባዶ ነው') . "</b> ]<br>";
+    echo "የተያዘው third_select ቫልዩ: [ <b>" . ($thirdSelect ?: 'ባዶ ነው') . "</b> ]<br>";
+    echo "የተያዘው fourth_select ቫልዩ: [ <b>" . ($fourthSelect ?: 'ባዶ ነው') . "</b> ]<br>";
+    echo "</div>";
+    // ----------------------------------------------------*/
+
+    // 2. 1ኛው ሳጥን ሲመረጥ 2ተኛውን ዝርዝር እናመጣለን
+    if ($reportType === 'regional') {
+        $secondList = $branchModel->getRegionalBranches();
+    } 
+    else if ($reportType === 'administrative') {
+        $secondList = $branchModel->getAdministrativeBranches(); 
+    }
+
+    // 3. 2ተኛው ሳጥን ተመርጦ ሲመጣ 3ተኛውን ዝርዝር እናመጣለን
+    if (!empty($secondSelect)) {
+        if ($reportType === 'regional') {
+            $thirdList = $branchModel->getRegional2ndBranches($secondSelect);
+        } 
+        else if ($reportType === 'administrative') {
+            $thirdList = $branchModel->getAdministrative2ndBranches($secondSelect);
+        }
+    }
+
+    // 4. 4ተኛው ሳጥን (branch_type) ራሱን ችሎ ከሞዴል ይሞላል
+    $fourthList = $branchModel->getbytype(null); 
+
+    // =========================================================================
+    // 5. 🎯 ለዚህኛው ሪፖርት (ሠ2) የአገልግሎት ዘመን የሚያሰላ አዲስ ፋንክሽን እንጠራለን
+    // =========================================================================
+    $reportData = $branchModel->getServiceYearReport([
+        'report_type'   => $reportType,
+        'second_select' => $secondSelect,
+        'third_select'  => $thirdSelect,
+        'fourth_select' => $fourthSelect
+    ]);
+    // =========================================================================
+
+    // 🏷️ 6. የተመረጡትን ማጣሪያዎች ስም እንደ ቅደም ተከተላቸው (ከላይ ወደ ታች) መለየት
+    $reportTitle = 'የተሽከርካሪዎች አገልግሎት ዘመን ሪፖርት (ሠ2)';
+    $filterPathParts = [];
+
+    // ሀ) 1ኛው ማጣሪያ (Report Type)
+    if ($reportType === 'regional') {
+        $filterPathParts[] = 'የክልል ተጠሪ ሪፖርት';
+    } elseif ($reportType === 'administrative') {
+        $filterPathParts[] = 'የአስተዳደር ዞን/ወረዳ ሪፖርት';
+    }
+
+    // ለ) 2ኛው ማጣሪያ (Second Select)
+    if (!empty($secondSelect)) {
+        $targetSecondList = [];
+        if ($reportType === 'regional') {
+            $targetSecondList = $branchModel->getRegionalBranches();
+        } elseif ($reportType === 'administrative') {
+            $targetSecondList = $branchModel->getAdministrativeBranches();
+        }
+
+        foreach ($targetSecondList as $item) {
+            $sId = $item['id'] ?? $item['branch_id'] ?? '';
+            $sName = $item['name'] ?? $item['branch_name'] ?? '';
+            if ($sId == $secondSelect) {
+                $filterPathParts[] = $sName;
+                break;
+            }
+        }
+    }
+
+    // ሐ) 3ተኛው ማጣሪያ (Third Select)
+    if (!empty($thirdSelect)) {
+        foreach ($thirdList as $item) {
+            $tId = $item['id'] ?? $item['branch_id'] ?? '';
+            $tName = $item['name'] ?? $item['branch_name'] ?? '';
+            if ($tId == $thirdSelect) {
+                $filterPathParts[] = $tName;
+                break;
+            }
+        }
+    }
+
+    // መ) 4ተኛው ማጣሪያ (Fourth Select / Branch Type)
+    if (!empty($fourthSelect)) {
+        foreach ($fourthList as $item) {
+            $fId = $item['id'] ?? $item['type_id'] ?? '';
+            $fName = $item['name'] ?? $item['type_name'] ?? '';
+            if ($fId == $fourthSelect) {
+                $filterPathParts[] = $fName;
+                break;
+            }
+        }
+    }
+
+    // የተመረጡትን ክፍሎች በቅደም ተከተል ማቀናጀት (በቀስት ምልክት " > " ተለያይተው እንዲወጡ)
+    if (!empty($filterPathParts)) {
+        $reportTitle = 'የተሽከርካሪዎች አገልግሎት ዘመን ሪፖርት (ሠ2) - ' . implode(' > ', $filterPathParts);
+    }
+
+    // 7. የተሰበሰቡትን መረጃዎች ወደ ሪፖርት 2 ቪው እንልካለን
+    $data = [
+        'title'       => $reportTitle,
+        'currentLang' => $currentLang,
+        'secondList'  => $secondList,
+        'thirdList'   => $thirdList,
+        'fourthList'  => $fourthList,
+        'reportData'  => $reportData
+    ];
+
+    // ሪፖርት 2 ቪው ፋይልን (report2_view) እንጠራዋለን
+    $this->renderPrintable('report2_view', $data);
 }
 
 public function getSecondList()
