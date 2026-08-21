@@ -54,7 +54,10 @@ return [
     'vehicles-car-types'            => ['VehicleController', 'carTypesByBrand', true],
     'vehicles-store'      => ['VehicleController', 'store', true],
     'vehicles-list'       => ['VehicleController', 'list', true],
-    'edit-vehicle'                  => ['VehicleController', 'getVehicleById', true],
+    'vehicles-edit-data'                  => ['VehicleController', 'editData', true],
+    'vehicle-update'                  => ['VehicleController', 'update', true],
+    'delete-vehicle-process'          => ['VehicleController', 'purge', true],
+    
     // Audit Logs
     'audit-logs'         => ['AuditController', 'index', true],
     'audit-logs-data'    => ['AuditController', 'data', true],

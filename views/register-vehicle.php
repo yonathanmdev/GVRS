@@ -861,8 +861,8 @@ $is_vehicle_page = true;
         background:
             linear-gradient(
                 135deg,
-                #1cc88a,
-                #159b6c
+                #080d64,
+                rgb(15, 6, 49)
             );
 
         border-color: transparent;
@@ -1250,7 +1250,7 @@ $is_vehicle_page = true;
                         </label>
 
 
-                        <select class="form-control final-select"
+                        <select class="form-control final-select persist-value"
                                 id="regional_bureau_select">
 
                             <option value=""
@@ -1286,7 +1286,7 @@ $is_vehicle_page = true;
                         </label>
 
 
-                        <select class="form-control"
+                        <select class="form-control persist-value"
                                 id="inst_bureau_select"
                                 data-loads="#institution_select"
                                 data-endpoint="/vehicles-institutions"
@@ -1319,7 +1319,7 @@ $is_vehicle_page = true;
                         </label>
 
 
-                        <select class="form-control final-select"
+                        <select class="form-control final-select persist-value"
                                 id="institution_select"
                                 style="display:none;"
                                 disabled>
@@ -1348,7 +1348,7 @@ $is_vehicle_page = true;
                         </label>
 
 
-                        <select class="form-control"
+                        <select class="form-control persist-value"
                                 id="memriya_select">
 
                             <option value=""
@@ -1378,7 +1378,7 @@ $is_vehicle_page = true;
                         </label>
 
 
-                        <select class="form-control"
+                        <select class="form-control persist-value"
                                 id="memriya_zone_select"
                                 style="display:none;">
 
@@ -1415,7 +1415,7 @@ $is_vehicle_page = true;
                         </label>
 
 
-                        <select class="form-control"
+                        <select class="form-control persist-value"
                                 id="woreda_zone_select"
                                 data-loads="#woreda_select"
                                 data-endpoint="/vehicles-woredas"
@@ -1448,7 +1448,7 @@ $is_vehicle_page = true;
                         </label>
 
 
-                        <select class="form-control final-select"
+                        <select class="form-control final-select persist-value"
                                 id="woreda_select"
                                 style="display:none;"
                                 disabled>
@@ -1787,23 +1787,25 @@ $is_vehicle_page = true;
 
                                                 </div>
 
-                           <div class="form-group col-md-4">
+                     <div class="form-group col-md-4">
 
-                                                    <label>
-                                                        የመጫን አቅም
-                                                         <span class="required-mark">*</span>
-                                                    </label>
+    <label for="car_capacity">
+        የመጫን አቅም
+        <span class="required-mark">*</span>
+    </label>
 
-                                                    <input type="text"
-                                                           class="form-control"
-                                                           name="capacity"
-                                                           placeholder="ለምሳሌ፦ 5 ኩንታል" required>
+    <input type="text"
+           class="form-control"
+           name="capacity"
+           id="car_capacity"
+           placeholder="ለምሳሌ፦ 12"
+           required>
 
-                                                    <div class="field-hint">
-                                                        በኩንታል / በሰው / በፈረስ ጉልበት ይግለጹ
-                                                    </div>
+    <div class="field-hint">
+        በኩንታል / በሰው / በፈረስ ጉልበት ይግለጹ
+    </div>
 
-                                                </div>
+</div>
                                                 <div class="form-group col-md-6">
 
                                                     <label>
@@ -1834,7 +1836,7 @@ $is_vehicle_page = true;
                                                 <div class="form-group col-md-3">
 
                                                     <label>
-                                                        የተመረተበት ዓ.ም 
+                                                        የተመረተበት ዓ.ም (GC)
                                                          <span class="required-mark">*</span>
                                                     </label>
 
@@ -1852,7 +1854,7 @@ $is_vehicle_page = true;
                                                 <div class="form-group col-md-3">
 
                                                     <label>
-                                                        የተገዛበት ዓ.ም 
+                                                        የተገዛበት ዓ.ም (GC)
                                                          <span class="required-mark">*</span>
                                                     </label>
 

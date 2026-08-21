@@ -257,7 +257,7 @@ form.addEventListener('submit', function (e) {
     const formData = new FormData(form);
 
     finalSubmitBtn.disabled = true;
-    setButtonLoading(finalSubmitBtn, true, 'በመላክ ላይ...');
+    setButtonLoading(finalSubmitBtn, true, 'በመመዝገብ ላይ...');
 
     fetch(window.BASE_URL + '/vehicles-store', {
         method: 'POST',
@@ -278,7 +278,11 @@ form.addEventListener('submit', function (e) {
                     input.value = '';
                     input.setCustomValidity(''); // clear any leftover custom error before next entry
                 });
-                fieldset.querySelectorAll('input[name="plate_number"], input[name="chassis_number"]')[0]?.focus();
+                fieldset.querySelectorAll('select:not(.persist-value)').forEach(select => {
+                    select.selectedIndex = 0; // resets to the placeholder option
+                    select.setCustomValidity('');
+                });
+              document.getElementById('car_brand_select')?.focus();
             } else {
                 if (window.Swal) {
                     Swal.fire({ icon: 'error', text: data.message || 'ስህተት ተፈጥሯል', toast: true, position: 'top-end', timer: 3000, showConfirmButton: false });

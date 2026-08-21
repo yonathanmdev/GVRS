@@ -11,7 +11,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const amharicTypes = {
                 bureau: 'ቢሮ',
-                authority: 'ባለስልጣን'
+                authority: 'ባለስልጣን',
+                commission: 'ኮሚሽን',    
+                institution:'ኢንስቲቲዩት',
+                enterprise: 'ኢንተርፕሪይዝ',
+                memriya: 'መምሪያ',
+                tsfet_bet: 'ጽፈት ቤት',
+                college: 'ኮሌጅ',
+                zone: 'ዞን',
+                regio: 'ከተማ አስተዳደር',
+                kifle_ketema: 'ክ/ከተማ',
+                woreda: 'ወረዳ',
+                ketema_woreda: 'ከተማ ወረዳ'
             };
 
             const amharicType = amharicTypes[type];
