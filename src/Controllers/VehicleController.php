@@ -303,15 +303,18 @@ public function list(): void
     $branchId = !empty($_GET['branch_id']) ? (int) $_GET['branch_id'] : null;
 
     $vehicleModel = new VehicleModel($this->db);
+    
     $vehicles     = $vehicleModel->getRegisteredVehicles($branchId, $limit, $offset, $search);
     $totalCount   = $vehicleModel->countRegisteredVehicles($branchId, $search);
     $totalPages   = (int) ceil($totalCount / $limit);
+    $brands       = $vehicleModel->getDistinctBrands();
 
     //$branchModel = new FunctionalOrgModel($this->db);
     //$branches    = $branchModel->getAllForFilter();
 
     $this->render('vehicles-list', [
         'vehicles'       => $vehicles,
+        'brands'         => $brands,
         'selectedBranch' => $branchId,
         'search'         => $search,
         'page'           => $page,
@@ -319,5 +322,297 @@ public function list(): void
         'totalCount'     => $totalCount,
         'currentLang'    => $_SESSION['lang'] ?? 'am'
     ]);
+}
+public function editData(): void
+{
+    AuthHelper::checkRole(['system_admin', 'officer']);
+    header('Content-Type: application/json');
+
+    $uuid = (string) ($_GET['id'] ?? '');
+
+    if (empty($uuid)) {
+        echo json_encode(['success' => false, 'message' => 'መለያ አልገባም']);
+        return;
+    }
+
+    try {
+        
+        $model   = new VehicleModel($this->db);
+        $vehicle = $model->findByUuidWithDetails($uuid);
+
+        if (!$vehicle) {
+            echo json_encode(['success' => false, 'message' => 'ተሽከርካሪው አልተገኘም።']);
+            return;
+        }
+
+        // Human-readable "currently registered under" label, built from real joins.
+        $officeParts = array_filter([
+            $vehicle['branch_name'] ?? null,
+            $vehicle['zone_name']   ?? null,
+        ]);
+        $officeLabel = $officeParts ? implode(' / ', $officeParts) : null;
+
+        echo json_encode([
+            'success'      => true,
+            'vehicle'      => [
+                'uuid'              => $vehicle['uuid'],
+                'plate_number'      => $vehicle['plate_number'],
+                'model'             => $vehicle['model'],
+                'chassis_number'    => $vehicle['chassis_number'],
+                'engine_number'     => $vehicle['engine_number'],
+                'capacity'          => $vehicle['capacity'],
+                'estimated_price'   => $vehicle['estimated_price'],
+                'manufactured_year' => $vehicle['manufactured_year'],
+                'purchase_year'     => $vehicle['purchase_year'],
+                'vehicle_status'    => $vehicle['vehicle_status'],
+                'branch_id'         => $vehicle['branch_id']     ?? null,
+                'vehicle_type_id'   => $vehicle['vehicle_type']  ?? null,
+                'brand_id'          => $vehicle['brand_id']      ?? null,
+                'brand_name'        => $vehicle['brand_name']    ?? null,
+                'type_name'         => $vehicle['type_name']     ?? null,
+                'branch_name'       => $vehicle['branch_name']   ?? null,
+                'zone_name'         => $vehicle['zone_name']     ?? null,
+                // TODO: add once source table/column is confirmed
+                'measurement'       => $vehicle['measurement']   ?? null,
+                'service_name'      => $vehicle['service_name']  ?? null,
+
+            ],
+            'office_label' => $officeLabel,
+        ]);
+
+    } catch (\Exception $e) {
+        error_log("Vehicle EditData Error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'መረጃ ማምጣት አልተቻለም።']);
+    }
+}
+
+ public function update(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+ AuthHelper::checkRole(['system_admin', 'officer']);
+ $userId = $_SESSION['user']['id'] ?? null;
+       if($_SERVER['REQUEST_METHOD'] === 'POST') {
+        Csrf::verifyOrRedirect('login');
+        $uuid = trim($_POST['id'] ?? '');
+ 
+        if ($uuid === '') {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => 'የተሽከርካሪው ID አልተላከም',
+            ]);
+            return;
+        }
+ 
+        // --- Required field validation (server-side mirror of the JS) ---
+        $required = [
+            'brand_id'          => 'ብራንድ መምረጥ አለብዎት።',
+            'vehicle_type_id'   => 'የተሽከርካሪው/ማሽነሪው ዓይነት መምረጥ አለብዎት።',
+            'plate_number'      => 'ሰሌዳ ቁጥር ማስገባት አለብዎት።',
+            'capacity'          => 'የመጫን አቅም ማስገባት አለብዎት።',
+            'estimated_price'   => 'ግምታዊ ዋጋ ማስገባት አለብዎት።',
+            'manufactured_year' => 'የተመረተበትን ዓ.ም ማስገባት አለብዎት።',
+            'purchase_year'     => 'የተገዛበትን ዓ.ም ማስገባት አለብዎት።',
+            'vehicle_status'    => 'የአሁኑን ሁኔታ መምረጥ አለብዎት።',
+        ];
+ 
+        foreach ($required as $field => $message) {
+            if (!isset($_POST[$field]) || trim((string) $_POST[$field]) === '') {
+                http_response_code(422);
+                echo json_encode([
+                    'success' => false,
+                    'message' => $message,
+                ]);
+                return;
+            }
+        }
+ 
+        $manufacturedYear = (int) $_POST['manufactured_year'];
+        $purchaseYear     = (int) $_POST['purchase_year'];
+        $currentYear      = (int) date('Y'); // GC, matches the form's max="" attribute
+ 
+        if ($manufacturedYear < 1950 || $manufacturedYear > $currentYear) {
+            http_response_code(422);
+            echo json_encode([
+                'success' => false,
+                'message' => 'የተመረተበት ዓ.ም ትክክል አይደለም።',
+            ]);
+            return;
+        }
+ 
+        if ($purchaseYear < 1950 || $purchaseYear > $currentYear) {
+            http_response_code(422);
+            echo json_encode([
+                'success' => false,
+                'message' => 'የተገዛበት ዓ.ም ትክክል አይደለም።',
+            ]);
+            return;
+        }
+ 
+        if ($purchaseYear < $manufacturedYear) {
+            http_response_code(422);
+            echo json_encode([
+                'success' => false,
+                'message' => 'የተገዛበት ዓ.ም ከተመረተበት ዓ.ም በፊት ሊሆን አይችልም።',
+            ]);
+            return;
+        }
+ 
+        $estimatedPrice = filter_var(
+            $_POST['estimated_price'],
+            FILTER_VALIDATE_FLOAT
+        );
+ 
+        if ($estimatedPrice === false || $estimatedPrice < 0) {
+            http_response_code(422);
+            echo json_encode([
+                'success' => false,
+                'message' => 'ግምታዊ ዋጋ ትክክል አይደለም።',
+            ]);
+            return;
+        }
+ 
+        try {
+            $vehicleModel = new VehicleModel($this->db);
+            $existing = $vehicleModel->findByUuid($uuid);
+ 
+            if (!$existing) {
+                http_response_code(404);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'ተሽከርካሪው አልተገኘም',
+                ]);
+                return;
+            }
+            $newValues = [
+                'uuid'              => $uuid,
+                'vehicle_type'   => (int) $_POST['vehicle_type_id'],
+                'plate_number'      => trim($_POST['plate_number']),
+                'model'             => trim($_POST['model'] ?? ''),
+                'chassis_number'    => trim($_POST['chassis_number'] ?? ''),
+                'engine_number'     => trim($_POST['engine_number'] ?? ''),
+                'capacity'          => trim($_POST['capacity']),
+                'estimated_price'   => $estimatedPrice,
+                'manufactured_year' => $manufacturedYear,
+                'purchase_year'     => $purchaseYear,
+                'vehicle_status'    => trim($_POST['vehicle_status']),
+                'updated_by'        => $userId,
+
+            ];
+ 
+            $updated = $vehicleModel->updateByUuid($newValues);
+ 
+            if (!$updated) {
+                http_response_code(500);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'ማዘመን አልተቻለም',
+                ]);
+                return;
+            }
+ 
+            \App\Helpers\AuditHelper::log(
+                action: 'vehicle_updated',
+                entityType: 'vehicle',
+                entityId: $existing['id'], // internal BIGINT id, not uuid
+                oldValues: $existing,
+                newValues: $newValues,
+                metadata: ['uuid' => $uuid]
+            );
+ 
+            echo json_encode([
+                'success' => true,
+                'message' => 'መረጃው በትክክል ተዘምኗል',
+                'vehicle' => array_merge(['uuid' => $uuid], $newValues),
+            ]);
+        } catch (\Throwable $e) {
+            error_log('[VehicleController::update] ' . $e->getMessage());
+ 
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'message' => 'ማዘመን ላይ ስህተት ተፈጥሯል',
+            ]);
+        }
+    }
+    }
+public function purge(): void
+{
+    AuthHelper::checkRole(['system_admin', 'officer']);
+    header('Content-Type: application/json');
+
+    $data = json_decode(file_get_contents('php://input'), true);
+    $csrf = (string) ($data['csrf_token'] ?? '');
+
+    if (!\App\Helpers\Csrf::verify($csrf)) {
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'message' => 'ያልተፈቀደ ጥያቄ (Invalid request token)']);
+        return;
+    }
+    $id       = (string) ($data['id']               ?? '');
+    $adminId  = (string) ($_SESSION['user']['id']   ?? '');
+    $password = (string) ($data['confirm_password'] ?? '');
+    $reason   = trim((string) ($data['reason']       ?? ''));
+
+    if (empty($id) || empty($password)) {
+        echo json_encode(['status' => 'error', 'message' => 'መለያ ወይም ሚስጥራዊ ቁጥር አልገባም']);
+        return;
+    }
+    // ============================================================
+    // 1. Verify admin password
+    // ============================================================
+    $userModel = new User($this->db);
+    if (!$userModel->verifyPassword($adminId, $password)) {
+        echo json_encode(['status' => 'error', 'message' => 'የእርስዎ ሚስጥራዊ ቁጥር (Password) ትክክል አይደለም።']);
+        return;
+    }
+
+    try {
+        // ============================================================
+        // 2. Load target record
+        // ============================================================
+        $archiveId  = Uuid::uuid7()->toString();
+        $model      = new VehicleModel($this->db);
+        $action     = 'vehicle_purged';
+        $entityType = 'vehicle';
+        $metaKey    = 'purged_vehicles';
+        $oldRecord  = $model->findByUuid($id);
+
+        if (!$oldRecord) {
+            echo json_encode(['status' => 'error', 'message' => 'መረጃው አልተገኘም።']);
+            return;
+        }
+
+        // ============================================================
+        // 3. Purge — model handles archive + hard delete internally
+        // ============================================================
+        $result = $model->purge($id, $archiveId, (int) $adminId, $reason);
+
+        // ============================================================
+        // 4. Audit log — includes archiveId + reason so you can trace back
+        // ============================================================
+        if ($result['status'] === 'success') {
+            \App\Helpers\AuditHelper::log(
+                action:     $action,
+                entityType: $entityType,
+                entityId:   $id,
+                oldValues:  $oldRecord,
+                newValues:  null,
+                metadata:   [
+                    $metaKey        => 1,
+                    'archive_id'    => $result['archiveId'] ?? null,
+                    'deletion_type' => 'permanent_purge',
+                    'reason'        => $reason,
+                    'confirmed_by'  => $adminId,
+                ]
+            );
+        }
+
+        echo json_encode($result);
+
+    } catch (\Exception $e) {
+        error_log("Purge Error: " . $e->getMessage());
+        echo json_encode(['status' => 'error', 'message' => 'መሰረዝ አልተቻለም።']);
+    }
 }
 }

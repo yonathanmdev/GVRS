@@ -134,7 +134,7 @@ $clearSearchUrl = $basePath . (!empty($clearSearchQs) ? '?' . http_build_query($
 
                                 <?php foreach ($vehicles as $index => $vehicle): ?>
 
-                                    <tr>
+                                    <tr id="row-<?= ViewHelper::e($vehicle['uuid']) ?>">
                                         <td><?= $rowOffset + $index + 1 ?></td>
 
                                         <td class="font-weight-bold">
@@ -205,11 +205,12 @@ $clearSearchUrl = $basePath . (!empty($clearSearchQs) ? '?' . http_build_query($
                                             >
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <button class="btn btn-outline-secondary btn-sm  edit-vehicle" 
-                                            data-id="<?= ViewHelper::e($vehicle['uuid']) ?>" 
-                                            title="አስተካክል"  >
-                                            <i class="fas fa-edit"></i>
-                                        </button> 
+                                           <button class="btn btn-outline-warning btn-sm edit-vehicle"
+        data-id="<?= ViewHelper::e($vehicle['uuid']) ?>"
+        data-name="<?= ViewHelper::e($vehicle['plate_number']) ?>"
+        title="አስተካክል">
+    <i class="fas fa-edit"></i>
+</button>
               <button class="btn btn-outline-danger btn-sm delete-vehicle" 
                       data-id=<?= ViewHelper::e($vehicle['uuid']) ?>
                       data-name="<?= ViewHelper::e($vehicle['plate_number']) ?>"
@@ -241,3 +242,4 @@ $clearSearchUrl = $basePath . (!empty($clearSearchQs) ? '?' . http_build_query($
 
     </div>
 </section>
+<?php include 'partials/edit-vehicle-modal.php'; ?>

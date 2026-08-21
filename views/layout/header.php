@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- CSRF token for AJAX requests -->
+    <meta name="csrf-token" content="<?= htmlspecialchars(\App\Helpers\Csrf::token(), ENT_QUOTES, 'UTF-8') ?>">
+
   <title>GVRS</title>
 <base href="<?= $_ENV['BASE_URL'] ?>/public/">
 <!-- Font Awesome -->
@@ -38,6 +41,7 @@
    <script nonce="<?php echo $GLOBALS['nonce']; ?>">
     window.BASE_URL = "<?= rtrim($_ENV['BASE_URL'], '/') ?>";
 </script>
+
 </head>
 <body class="hold-transition sidebar-mini">
 <div class="wrapper">
