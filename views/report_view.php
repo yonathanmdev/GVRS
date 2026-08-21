@@ -96,7 +96,7 @@ $secondSelect = $_GET['second_select'] ?? ''; // ሁለተኛው ሳጥን ቫ�
                 ?>
             </label>
             
-            <select class="form-select" id="second_select" name="second_select" onchange="this.form.submit()">
+            <select  class="form-control" id="second_select" name="second_select" onchange="this.form.submit()">
                 <option value="">-- ምረጡ --</option>
                 <option value="all" <?= ($secondSelect == 'all') ? 'selected' : '' ?>>-- ሁሉም (All) --</option>
                 <?php 
@@ -118,7 +118,7 @@ $secondSelect = $_GET['second_select'] ?? ''; // ሁለተኛው ሳጥን ቫ�
             </select>
         </div>
 <!-- 3ኛ ሳጥን -->
-<div class="col-md-4" id="box_third" style="<?= ($r_type == 'agency' || $r_type == 'department' || $r_type == 'wereda') ? '' : 'display:none;' ?>">
+<div class="col-md-6" id="box_third" style="<?= ($r_type == 'agency' || $r_type == 'department' || $r_type == 'wereda') ? '' : 'display:none;' ?>">
         <label for="third_select" class="form-label fw-bold">
             <?php 
                 if ($r_type == 'department') {
@@ -130,7 +130,7 @@ $secondSelect = $_GET['second_select'] ?? ''; // ሁለተኛው ሳጥን ቫ�
                 }
             ?>
         </label>
-        <select class="form-select" id="third_select" name="third_select" onchange="this.form.submit()">
+        <select  class="form-control" id="third_select" name="third_select" onchange="this.form.submit()">
             <option value="">-- ምረጡ --</option>
             <option value="all" <?= (isset($_GET['third_select']) && $_GET['third_select'] == 'all') ? 'selected' : '' ?>>-- ሁሉም (All) --</option>
             <?php 
@@ -144,23 +144,22 @@ $secondSelect = $_GET['second_select'] ?? ''; // ሁለተኛው ሳጥን ቫ�
         </select>
     </div>
     
-        </div>
 
-        <!-- 3. የሪፖርት ዓይነት እና ማሳያ ቁልፍ -->
-        <div class="row align-items-end p-3 bg-light border rounded-3 g-3">
-            <div class="col-md-8">
-                <label for="fifth_select" class="form-label fw-bold text-success">የሚፈልጉትን የሪፖርት ዓይነት ይምረጡ</label>
-                <select class="form-select border-success" id="fifth_select" name="fifth_select" required>
+            <div class="col-md-4">
+                <label for="fifth_select" class="form-label fw-bold ">የሚፈልጉትን የሪፖርት ዓይነት ይምረጡ</label>
+                <select class="form-control" id="fifth_select" name="fifth_select" required>
                     <option value="">-- ሪፖርት ምረጡ --</option>
                     <option value="ሠ1" <?= (isset($_GET['fifth_select']) && $_GET['fifth_select'] == 'ሠ1') ? 'selected' : '' ?>>የተሽከርካሪዎች ጥቅል ሪፖርት (ሠ1)</option>
                     <option value="ሠ2" <?= (isset($_GET['fifth_select']) && $_GET['fifth_select'] == 'ሠ2') ? 'selected' : '' ?>>በአገልግሎት ዘመን ሪፖርት (ሠ2)</option>
                 </select>
             </div>
 
-            <div class="col-md-4 text-md-end">
-                <button type="submit" name="show_report" class="btn btn-primary btn-sm px-4 shadow-sm py-1" style="height: 31px;">
-                    📊 ሪፖርቱን አሳይ
+            <div class="col-md-2">
+            <div class="d-flex align-items-end h-100">
+                <button type="submit" name="show_report"   class="btn btn-primary px-4">
+                    አሳይ
                 </button>
+            </div>
             </div>
         </div>
 

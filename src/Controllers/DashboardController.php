@@ -173,19 +173,19 @@ public function report1controller(): void
     // 4. 4ተኛው ሳጥን (branch_type) ራሱን ችሎ ከሞዴል ይሞላል
     $fourthList = $branchModel->getbytype(null); 
 
-    // 5. ዳይናሚክ የሪፖርት ማምጫውን ሞዴል መጥራት
-    if (!empty($reportType)) {
-        $reportData = $branchModel->getVehicleReportAdvanced([
-            'report_type'   => $reportType,
-            'second_select' => $secondSelect,
-            'third_select'  => $thirdSelect,
-            'fourth_select' => $fourthSelect
-        ]);
-    }
+    // =========================================================================
+    // 5. 🎯 ለዚህኛው ሪፖርት 'getDynamicVehicleReport' ን ብቻ እንጠቀማለን 
+    //    ('getVehicleReportAdvanced' ደግሞ ለራሱ ለሌላው የተለየ ስራው እንዳለ ይቆያል)
+    // =========================================================================
+    $reportData = $branchModel->getDynamicVehicleReport([
+        'report_type'   => $reportType,
+        'second_select' => $secondSelect,
+        'third_select'  => $thirdSelect,
+        'fourth_select' => $fourthSelect
+    ]);
+    // =========================================================================
 
-    // =========================================================================
     // 🏷️ 6. የተመረጡትን ማጣሪያዎች ስም እንደ ቅደም ተከተላቸው (ከላይ ወደ ታች) መለየት
-    // =========================================================================
     $reportTitle = 'የተሽከርካሪዎች ማጠቃለያ ሪፖርት';
     $filterPathParts = [];
 
@@ -243,16 +243,15 @@ public function report1controller(): void
     if (!empty($filterPathParts)) {
         $reportTitle = 'የተሽከርካሪዎች ማጠቃለያ ሪፖርት - ' . implode(' > ', $filterPathParts);
     }
-    // =========================================================================
 
     // 7. የተሰበሰቡትን መረጃዎች ወደ ሪፖርት 1 ቪው እንልካለን
     $data = [
         'title'       => $reportTitle,
-        'currentLang'  => $currentLang,
-        'secondList'   => $secondList,
-        'thirdList'    => $thirdList,
-        'fourthList'   => $fourthList,
-        'reportData'   => $reportData
+        'currentLang' => $currentLang,
+        'secondList'  => $secondList,
+        'thirdList'   => $thirdList,
+        'fourthList'  => $fourthList,
+        'reportData'  => $reportData
     ];
 
     // ሪፖርት 1 ቪው ፋይልን እንጠራዋለን
