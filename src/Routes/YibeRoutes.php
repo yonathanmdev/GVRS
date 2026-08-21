@@ -6,6 +6,7 @@ return [
     'dashboard' => ['DashboardController', 'dashboard', true],
     'report_view' => ['DashboardController', 'reportView', true],
     'report1_view' => ['DashboardController', 'report1controller', true],
+    'report2_view' => ['DashboardController', 'report2controller', true],
     //'bureau-analytics' => ['DashboardController', 'bureauAnalytics', true],
 
 
