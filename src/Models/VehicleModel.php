@@ -183,4 +183,189 @@ public function countRegisteredVehicles($branchId = null, string $search = ''): 
 
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
+/**
+ * Public: general-purpose lookup by UUID. No locking — safe to call
+ * anywhere (display, edit forms, dropdowns, etc.)
+ */
+public function findByUuid(string $uuid): ?array
+{
+    $stmt = $this->db->prepare("SELECT * FROM vehicles WHERE uuid = :uuid LIMIT 1");
+    $stmt->execute([':uuid' => $uuid]);
+
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+
+/**
+ * Private: row-locking lookup for use ONLY inside an active transaction
+ * (purge, restore, or any read-then-mutate flow). Locks just the
+ * vehicles row — no joins, so no risk of locking unrelated tables.
+ */
+private function lockByUuid(string $uuid): ?array
+{
+    $stmt = $this->db->prepare("SELECT * FROM vehicles WHERE uuid = :uuid FOR UPDATE");
+    $stmt->execute([':uuid' => $uuid]);
+
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+public function findByUuidWithDetails(string $uuid): ?array
+{
+    $sql = "SELECT 
+                v.id,
+                v.uuid,
+                v.branch_id,
+                v.zone_id,
+                v.plate_number,
+                v.vehicle_type,
+                v.model,
+                v.chassis_number,
+                v.engine_number,
+                v.capacity,
+                v.manufactured_year,
+                v.estimated_price,
+                v.purchase_year,
+                v.vehicle_status,
+                v.is_active,
+                v.registered_by,
+                v.created_at,
+
+                b.id          AS brand_id,
+                b.brand_name,
+                ctl.cartype   AS type_name,
+
+                br.name       AS branch_name,
+                z.name        AS zone_name
+
+            FROM vehicles v
+
+            LEFT JOIN car_type ct       ON ct.id = v.vehicle_type AND v.is_active = 1
+            LEFT JOIN brand b           ON b.id = ct.brand_id
+            LEFT JOIN cartypelist ctl   ON ctl.id = ct.type_name
+
+            LEFT JOIN branches br ON br.id = v.branch_id
+            LEFT JOIN branches z  ON z.id = v.zone_id
+
+            WHERE v.uuid = :uuid
+            LIMIT 1";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([':uuid' => $uuid]);
+
+    $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+    return $row ?: null;
+}
+
+public function updateByUuid(array $data): bool
+{
+    $this->db->beginTransaction();
+
+    try {
+        $vehicle = $this->lockByUuid($data['uuid']);
+
+        if (!$vehicle) {
+            $this->db->rollBack();
+            return false;
+        }
+
+
+        $sql = "UPDATE vehicles SET
+                    plate_number      = :plate_number,
+                    vehicle_type      = :vehicle_type,
+                    model             = :model,
+                    chassis_number    = :chassis_number,
+                    engine_number     = :engine_number,
+                    capacity          = :capacity,
+                    manufactured_year = :manufactured_year,
+                    estimated_price   = :estimated_price,
+                    purchase_year     = :purchase_year,
+                    vehicle_status    = :vehicle_status,
+                    updated_by        = :updated_by,
+                    updated_at        = :updated_at
+                WHERE branch_id = :branch_id
+                  AND id = :id";
+
+        $stmt = $this->db->prepare($sql);
+
+        $stmt->execute([
+            ':plate_number'      => $data['plate_number'],
+            ':vehicle_type'      => $data['vehicle_type'],
+            ':model'             => $data['model'],
+            ':chassis_number'    => $data['chassis_number'],
+            ':engine_number'     => $data['engine_number'],
+            ':capacity'          => $data['capacity'],
+            ':manufactured_year' => $data['manufactured_year'],
+            ':estimated_price'   => $data['estimated_price'],
+            ':purchase_year'     => $data['purchase_year'],
+            ':vehicle_status'    => $data['vehicle_status'],
+            ':updated_by'        => $data['updated_by'],
+            ':updated_at'        => date('Y-m-d H:i:s'),
+            ':branch_id'         => $vehicle['branch_id'],
+            ':id'                => $vehicle['id'],
+        ]);
+
+
+        /*
+         * The UPDATE executed successfully.
+         *
+         * Do NOT use rowCount() > 0 as the success condition.
+         * rowCount() may be 0 when the submitted values are
+         * exactly the same as the existing values.
+         */
+        $this->db->commit();
+
+        return true;
+
+    } catch (\Throwable $e) {
+
+        if ($this->db->inTransaction()) {
+            $this->db->rollBack();
+        }
+
+        error_log(
+            'Vehicle update failed: ' . $e->getMessage()
+        );
+
+        return false;
+    }
+}
+public function purge(string $uuid, string $archiveId, int $purgedBy, string $reason): array
+{
+    $this->db->beginTransaction();
+
+    try {
+        $vehicle = $this->lockByUuid($uuid);
+
+        if (!$vehicle) {
+            $this->db->rollBack();
+            return ['status' => 'error', 'message' => 'ተሽከርካሪው አልተገኘም።'];
+        }
+
+        $archive = new Archive($this->db);
+        $archive->create(
+            entityType: 'vehicle',
+            originalId: $vehicle['uuid'],
+            snapshot:   $vehicle,
+            archivedBy: $purgedBy,
+            reason:     $reason,
+            archiveId:  $archiveId
+        );
+
+        $del = $this->db->prepare("DELETE FROM vehicles WHERE uuid = :uuid");
+        $del->execute([':uuid' => $uuid]);
+
+        $this->db->commit();
+
+        return [
+            'status'    => 'success',
+            'message'   => 'ተሽከርካሪው ሙሉ በሙሉ ተሰርዟል።',
+            'archiveId' => $archiveId,
+        ];
+    } catch (\Exception $e) {
+        $this->db->rollBack();
+        throw $e;
+    }
+}
 }

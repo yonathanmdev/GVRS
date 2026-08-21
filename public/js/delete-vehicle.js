@@ -41,10 +41,9 @@ document.addEventListener('DOMContentLoaded', function () {
             requirePassword: true,
 
             onSuccess: () => {
-                document
-                    .getElementById(`row-${vehicleId}`)
-                    ?.remove();
-            }
+    const table = $('#example1').DataTable();
+    table.row($('#row-' + vehicleId)).remove().draw(false);
+}
         });
 
     });
