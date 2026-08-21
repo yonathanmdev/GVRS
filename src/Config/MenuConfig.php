@@ -83,6 +83,30 @@ class MenuConfig
                     ],
                 ]
             ],
+               [
+                'label' => 'መረጃ ማዕከላዊ መዋቅር',
+                'icon'  => 'fas fa-edit',
+                'roles' => ['system_admin', 'admin'],
+                'children' => [
+                    [
+                        'label' => 'የመኪና ብራንድ መመዝገብ',
+                        'url'   => '/register-car-brand',
+                        'roles' => ['system_admin', 'admin'],
+                    ],
+                           [
+                        'label' => 'የመኪና አይነት መመዝገብ',
+                        'url'   => '/register-car-type',
+                        'roles' => ['system_admin', 'admin'],
+                    ],
+                    
+                    [
+                        'label' => 'የመኪና አይነት ዝርዝር',
+                        'url'   => '/car-type-list',
+                        'roles' => ['system_admin', 'admin'],
+                    ],
+                 
+                ]
+            ],
             [
                 'label' => 'ተሽከርካሪ',
                 'icon'  => 'fas fa-edit',

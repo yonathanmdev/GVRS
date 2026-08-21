@@ -94,6 +94,10 @@ function myAsset($path) {
     <script src="<?= myAsset('js/bureau-logic.js') ?>"></script>
     <script src="<?= myAsset('js/delete-branch.js') ?>"></script>
     <?php endif; ?>
+    <?php if (isset($is_car_page) && $is_car_page === true): ?>
+    <script src="<?= myAsset('js/car-logic.js') ?>"></script>
+    <script src="<?= myAsset('js/delete-car.js') ?>"></script>
+    <?php endif; ?>
 
     <?php if (isset($is_zone_page) && $is_zone_page === true): ?>
     <script src="<?= myAsset('js/zone-logic.js') ?>"></script>
