@@ -232,7 +232,7 @@ $colCount = count($activeCarTypes) + 8; // ተ.ቁ፣ ስም፣ የካር አይ
                             $totals['type_' . $type['id']] = 0;
                         }
                         
-                        // የስታተስ ድምር ማከማቻ ተለዋዋጮች
+                        // የስታተስ ድምር ማከማቻ ተለዋዋጮች 
                         $t_total_vehicles = 0; 
                         $t_active = 0; 
                         $t_out_of_service = 0; 

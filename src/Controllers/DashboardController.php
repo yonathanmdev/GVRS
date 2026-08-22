@@ -73,16 +73,17 @@ public function reportView(): void
         $secondList = $branchModel->getRegionalBranches(); 
     }
     else if ($reportType === 'department') {
-        // መምሪያ ሲመረጥ መጀመሪያ የሚወጡት የመምሪያዎች ዝርዝር ናቸው
-        $secondList = $branchModel->getRegional2ndMemriya(null); // ወይም መምሪያዎችን ብቻ የሚያመጣ ፋንክሽን
+        $secondList = $branchModel->getRegional2ndMemriya(null); 
     }
     else if ($reportType === 'zone') {
-        // ዞን ሲመረጥ ቀጥታ አስተዳደራዊ ዞኖችን እናመጣለን
         $secondList = $branchModel->getAdministrativeBranches(); 
     }
     else if ($reportType === 'wereda') {
-        // ወረዳ ሲመረጥ መጀመሪያ የሚወጡት ዞኖች (አስተዳደራዊ መዋቅሮች) ናቸው
         $secondList = $branchModel->getAdministrativeBranches(); 
+    }
+    // ✅ ሠንጠረዥ/ሳጥኑ ከላይ ከፍ ብሎ ከሌሎቹ ጋር እኩል እንዲቀመጥ እዚህ ጋር አደረግነው
+    else if ($reportType === 'calls') {
+        $secondList = $branchModel->getbytype(null); 
     }
 
     // 3. 2ተኛው ሳጥን ተመርጦ ከመጣ 3ተኛውን እናመጣለን
