@@ -40,7 +40,7 @@ $role = $_SESSION['user']['role'] ?? '';
      <?php if ($role === 'system_admin' || $role === 'admin'|| $role === 'mgmt'|| $role === 'officer'|| $role === 'data_encoder'): ?>
 
         <div class="col-md-4 col-sm-6 mb-3">
-  <!-- ሲነካ በቀጥታ ወደ ዓዲሱ ቻርቶች ገጽ ይወስዳል ።-->
+  <!-- ሲነካ በቀጥታ ወደ አዲሱ ቻርቶች ገጽ ይወስዳል ።-->
 <a href="<?= rtrim($_ENV['BASE_URL'], '/') ?>/bureau-analytics" style="text-decoration: none; color: inherit;">
   <div class="report-type-card card card-outline card-primary h-100 shadow-sm" style="border-radius: 12px; cursor: pointer;">
     <div class="card-body text-center py-4 d-flex flex-column align-items-center justify-content-center position-relative">
