@@ -115,7 +115,7 @@ class MenuConfig
                     [
                         'label' => 'ተሽከርካሪ መመዝገብ',
                         'url'   => '/register-vehicle',
-                       'roles' => ['system_admin', 'officer'],
+                       'roles' => ['system_admin','mgmt', 'officer'],
                     ],
                     [
                         'label' => 'ተሽከርካሪ ዝርዝር',
@@ -129,12 +129,12 @@ class MenuConfig
         [
                 'label' => 'ሪፖርት',
                 'icon'  => 'fas fa-edit',
-                'roles' => ['system_admin', 'officer'],
+               'roles' => ['system_admin','mgmt', 'officer'],
                 'children' => [
                     [
                         'label' => 'ማየት',
                         'url'   => '/report_view',
-                       'roles' => ['system_admin', 'officer'],
+                       'roles' => ['system_admin','mgmt', 'officer'],
                     ],
                 ]
             ],

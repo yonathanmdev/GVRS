@@ -198,10 +198,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const fifthSelect = document.getElementById('fifth_select').value;
         
         if (fifthSelect === 'ሠ1') {
-            reportForm.action = `${baseUrl}/GVRS/report1_view`;
+            reportForm.action = `${BASE_URL}/report1_view`;
             reportForm.target = "_blank"; // በአዲስ ታብ እንዲከፈት
         } else if (fifthSelect === 'ሠ2') {
-            reportForm.action = `${baseUrl}/GVRS/report2_view`;
+            reportForm.action = `${BASE_URL}/report2_view`;
             reportForm.target = "_blank"; // በአዲስ ታብ እንዲከፈት
         }
     });
