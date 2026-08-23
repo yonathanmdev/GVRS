@@ -1,3 +1,6 @@
+<?php 
+use App\Helpers\ViewHelper;  
+?>
 <div class="modal fade" id="editBranchModal">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -60,13 +63,11 @@
               required
             >
                <option value="" disabled selected>ይምረጡ</option>
-              <option value="bureau">ቢሮ</option>
-              <option value="authority">ባለ ስልጣን</option>
-              <option value="commission">ኮሚሽን</option>
-              <option value="institution">ኢንስቲቲዩት</option>
-              <option value="enterprise">ኢንተርፕራይዝ</option>
-              <option value="memriya">መምሪያ</option>
-              <option value="tsfet_bet">ጽፈት ቤት</option>
+               <?php foreach ($branchTypes as $type): ?>
+        <option value="<?= ViewHelper::e($type['type_in_eng']) ?>">
+            <?= ViewHelper::e($type['type_in_am']) ?>
+        </option>
+    <?php endforeach; ?>
             </select>
           </div>
 

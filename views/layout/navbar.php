@@ -100,7 +100,11 @@ if ($userRole === 'system_admin') {
     $display_role = ($userLevel === 1) ? 'ዳይሬክተር' : 'ቡድን መሪ';
 } elseif ($userRole === 'officer') {
     $display_role = 'ባለሙያ';
-} else {
+} 
+elseif ($userRole === 'mgmt') {
+    $display_role = 'ማኔጅመንት';
+}
+else {
     header('Location: ' . rtrim($_ENV['BASE_URL'], '/') . '/login');
     exit;
 }

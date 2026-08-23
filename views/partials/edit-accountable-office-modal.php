@@ -131,3 +131,12 @@
     </div>
   </div>
 </div>
+<script nonce="<?= $GLOBALS['nonce'] ?? '' ?>">
+    window.BRANCH_TYPES = <?= json_encode(
+        array_values(array_filter(
+            $branchTypes,
+            fn($type) => $type['type_in_eng'] !== 'bureau'
+        )),
+        JSON_UNESCAPED_UNICODE
+    ) ?>;
+</script>

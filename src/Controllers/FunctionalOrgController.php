@@ -15,8 +15,7 @@ class FunctionalOrgController extends BaseController
 
         $userId = $_SESSION['user']['id'] ?? null;
         $currentLang = $_SESSION['lang'] ?? 'am';
-        $branchType = ['bureau', 'authority','commission','institution','enterprise','memriya','tsfet_bet'];
-        $level = 1;
+         $level = 1;
         $bureaus = [];
 
         if (!$userId) {
@@ -26,12 +25,17 @@ class FunctionalOrgController extends BaseController
         }
 
         $model = new FunctionalOrgModel($this->db);
-        $bureaus = $model->getAll($level, $branchType);
+$branchTypeRows = $model->getAllBranchTypes();
+$branchType     = array_column($branchTypeRows, 'type_in_eng');
 
-        $this->render('register-bureau', [
-            'branches' => $bureaus,
-            'currentLang' => $currentLang
-        ]);
+$bureaus = $model->getAll($level, $branchType);
+
+$this->render('register-bureau', [
+    'branches'      => $bureaus,
+    'currentLang'   => $currentLang,
+    'branchTypes'   => $branchTypeRows,
+    'branchTypeMap' => array_column($branchTypeRows, 'type_in_am', 'type_in_eng'),
+]);
     }
 
     public function breauRegistration()
@@ -71,8 +75,9 @@ class FunctionalOrgController extends BaseController
                 exit();
             }
 // Only allow valid bureau types
-    $allowedTypes = ['bureau', 'authority','commission','institution','enterprise','memriya','tsfet_bet'];
-
+    $model = new FunctionalOrgModel($this->db);
+    $allowedTypes    = array_column($model->getAllBranchTypes(), 'type_in_eng');
+ 
     if (!in_array($branch_type, $allowedTypes, true)) {
         $_SESSION['error'] = 'የተመረጠው የቢሮ ዓይነት ትክክል አይደለም!';
         header("Location: " . $_ENV['BASE_URL'] . "/register-bureau");
@@ -91,9 +96,7 @@ class FunctionalOrgController extends BaseController
                 'registered_by' => $userId
             ];
 
-            $model = new FunctionalOrgModel($this->db);
-
-            try {
+                     try {
 
                 // 4. ሞዴሉን መጥራት
                 // ይህ ድርጅቱን እና Main Officeን በአንድ ላይ ይመዘግባል
@@ -243,8 +246,9 @@ class FunctionalOrgController extends BaseController
         exit();
     }
 
-    $allowedTypes = ['bureau', 'authority','commission','institution','enterprise','memriya','tsfet_bet'];
-
+    $model = new FunctionalOrgModel($this->db);
+    $allowedTypes    = array_column($model->getAllBranchTypes(), 'type_in_eng');
+ 
     if (!in_array($branchType, $allowedTypes, true)) {
         http_response_code(400);
 
@@ -262,8 +266,6 @@ class FunctionalOrgController extends BaseController
         'branch_type' => $branchType,
         'updated_by'  => $userId
     ];
-
-    $model = new FunctionalOrgModel($this->db);
 
    try {
     $updated = $model->updateBureau($data);
@@ -329,7 +331,6 @@ $userId = $_SESSION['user']['id'] ?? null;
 $currentLang = $_SESSION['lang'] ?? 'am';
 $offices = [];
 $bureaus = [];
-$bureaus_types = ['bureau', 'authority', 'enterprise', 'institution', 'commission'];
 $bureauLevel = 1;
 $officeLevel = 2; // accountable offices sit one level below their bureau
 
@@ -340,6 +341,9 @@ if (!$userId) {
 }
 
 $bureausmodel = new FunctionalOrgModel($this->db);
+$branchTypeRows = $bureausmodel->getAllBranchTypes();
+$bureaus_types     = array_column($branchTypeRows, 'type_in_eng');
+
 $bureaus = $bureausmodel->getAll($bureauLevel, $bureaus_types);
 
 // Pagination for the woreda listing table
@@ -365,6 +369,9 @@ $offices = $bureausmodel->getaccountableOfficesWithBureau($officeLevel, null, $s
             'currentPage' => $currentPage,
             'totalPages'  => $totalPages,
             'search'      => $search,
+             'branchTypes'   => $branchTypeRows,    
+             'branchTypeMap' => array_column($branchTypeRows, 'type_in_am', 'type_in_eng'),
+
         ]);
     }
 
@@ -416,13 +423,18 @@ if (empty($parent)) {
 
 $model = new FunctionalOrgModel($this->db); // or whichever model has findById()
 $parentBranch = $model->findById($parent);
+ $allowedTypes    = array_column($model->getAllBranchTypes(), 'type_in_eng');
+ 
+    if (!in_array($branch_type, $allowedTypes, true)) {
+        http_response_code(400);
 
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'የቢሮው ዓይነት ትክክል አይደለም።'
+        ]);
 
-// 1. Validate the zone/region selection itself
-if (!in_array($parentBranch['branch_type'], ['bureau', 'authority', 'enterprise', 'institution', 'commission'], true)) {
-    echo json_encode(['status' => 'error', 'message' => 'የተመረጠው ዞን ወይም ከተማ አስተዳደር አይደለም።']);
-    return;
-}   
+        exit();
+    }
 
 
 
@@ -560,10 +572,21 @@ if (empty($parent)) {
 
 $model = new FunctionalOrgModel($this->db); // or whichever model has findById()
 $parentBranch = $model->findById($parent);
+$allowedTypes    = array_column($model->getAllBranchTypes(), 'type_in_eng');
+ 
+    if (!in_array($branch_type, $allowedTypes, true)) {
+        http_response_code(400);
 
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'የቢሮው ዓይነት ትክክል አይደለም።'
+        ]);
+
+        exit();
+    }
 
 // 1. Validate the zone/region selection itself
-if (!in_array($parentBranch['branch_type'], ['bureau', 'authority','commission','institution','enterprise'], true)) {
+if (!in_array($parentBranch['branch_type'], $allowedTypes, true)) {
     echo json_encode(['status' => 'error', 'message' => 'የተመረጠው እናት መ/ቤት አይደለም።']);
     return;
 }
