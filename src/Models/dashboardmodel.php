@@ -453,4 +453,48 @@ public function getVehicleReportAdvanced($filters): array
 
 
 
+public function bureausgraph(?string $id = null): array
+{
+    $sql = "SELECT 
+                b.name AS Name, 
+                COALESCE(bt.type_in_am, b.branch_type) AS CallerName, 
+                COUNT(v.id) AS vehicle_count
+            FROM branches b
+            LEFT JOIN branch_type bt ON b.branch_type = bt.type_in_eng
+            LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1
+            WHERE b.is_active = 1  
+              AND b.functional_path IS NOT NULL 
+              AND b.functional_path != ''
+            GROUP BY b.id, b.name, b.branch_type, bt.type_in_am";
+            
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute();
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+
+public function zonegraph(): array
+{
+    $sql = "SELECT 
+                b.id,
+                b.name AS Name, 
+                COALESCE(bt.type_in_am, b.branch_type) AS CallerName, 
+                COUNT(v.id) AS vehicle_count
+            FROM branches b
+            LEFT JOIN branch_type bt ON b.branch_type = bt.type_in_eng
+            LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1
+            WHERE b.is_active = 1 
+              AND b.level = 1
+              AND b.admin_path IS NOT NULL 
+              AND b.admin_path != '' 
+            GROUP BY b.id, b.name, b.branch_type, bt.type_in_am
+            ORDER BY b.name ASC";
+            
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute();
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
 }

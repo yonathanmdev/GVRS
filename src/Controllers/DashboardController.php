@@ -430,7 +430,28 @@ public function getThirdList()
 }
 
 
+public function bureausGraphView(): void
+{
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+    
+    // የተጠቃሚውን መብት እንፈትሻለን
+    AuthHelper::checkRole(['system_admin', 'admin', 'mgmt', 'officer']);
+    
+    $currentLang = $_SESSION['lang'] ?? 'am';
+    $branchModel = new DashboardModel($this->db);
 
+    // አዲሱን የመኪና ብዛት እና የቢሮ መረጃ ከሞዴል እንጠራለን
+    $reportData = $branchModel->bureausgraph();
 
+    $data = [
+        'title'       => 'የቢሮና ተጠሪ ተቋማት ቻርት ሪፖርት',
+        'currentLang' => $currentLang,
+        'reportData'  => $reportData // ዳታውን ወደ ቪው እናስተላልፋለን
+    ];
+    
+    $this->render('bureau-analytics', $data);
+}
 
 }
