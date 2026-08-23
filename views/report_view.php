@@ -14,7 +14,15 @@ $secondSelect = $_GET['second_select'] ?? ''; // ሁለተኛው ሳጥን ቫ�
         <label class="form-label fw-bold mb-3 text-secondary">የሚፈልጉትን የሪፖርት መዋቅር ይምረጡ፦</label>
         
 <div class="row g-2 mb-4 bg-white p-3 border rounded-3 shadow-sm">
-    
+    <!-- ሁሉንም አሳይ (አዲስ የተጨመረው) -->
+    <div class="col-md">
+        <div class="form-check">
+            <input class="form-check-input report-type-radio" type="radio" name="report_type" id="type_all" value="all" <?= (empty($r_type) || $r_type == 'all') ? 'checked' : '' ?>>
+            <label class="form-check-label fw-bold small" for="type_all">
+                📊 ሁሉንም አሳይ
+            </label>
+        </div>
+    </div>
     <!-- የክልል ተጠሪ ተቋም -->
     <div class="col-md">
         <div class="form-check">
@@ -205,5 +213,30 @@ document.addEventListener('DOMContentLoaded', function() {
             reportForm.target = "_blank"; // በአዲስ ታብ እንዲከፈት
         }
     });
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    // ፎርሙን ወይም የሰሚት ቁልፉን እንይዛለን (እንደ ሲስተምዎ አወቃቀር id ወይም class ማስተካከል ይችላሉ)
+    const reportForm = document.getElementById("reportFilterForm"); // ፎርሙ የሚጠቀምበት id 
+    
+    if (reportForm) {
+        reportForm.addEventListener("submit", function(event) {
+            // የተመረጠ ራዲዮ በተን መኖሩን እንፈትሻለን
+            const selectedRadio = document.querySelector('input.report-type-radio:checked');
+            
+            if (!selectedRadio) {
+                event.preventDefault(); // ፎርሙ እንዳይሄድ ይከለክላል
+                
+                // የማስጠንቀቂያ መልእክት (Alert)
+                alert("እባክዎ ከላይ ከሚገኙት የሪፖርት አይነቶች ውስጥ ቢያንስ አንዱን ይምረጡ!");
+                
+                // የመጀመሪያው ራዲዮ በተን ላይ ትኩረት (Focus) እንዲያደርግ ማድረግ ይቻላል
+                const firstRadio = document.getElementById('type_all');
+                if (firstRadio) {
+                    firstRadio.focus();
+                }
+            }
+        });
+    }
 });
 </script>

@@ -454,4 +454,53 @@ public function bureausGraphView(): void
     $this->render('bureau-analytics', $data);
 }
 
+public function zoneAnalyticsView(): void
+{
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+    
+    // የተጠቃሚውን መብት እንፈትሻለን
+    AuthHelper::checkRole(['system_admin', 'admin', 'mgmt', 'officer']);
+    
+    $currentLang = $_SESSION['lang'] ?? 'am';
+    $branchModel = new DashboardModel($this->db);
+
+    // የአስተዳደራዊ መዋቅር የመኪና ብዛት መረጃን ከሞዴል እንጠራለን
+    $reportData = $branchModel->zonegraph();
+
+    $data = [
+        'title'       => 'የአስተዳደራዊ መዋቅር ቻርት ሪፖርት',
+        'currentLang' => $currentLang,
+        'reportData'  => $reportData // ዳታውን ወደ ቪው እናስተላልፋለን
+    ];
+    
+    $this->render('zone_analytics', $data);
+}
+
+
+
+public function vehicleStatusView(): void
+{
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+    
+    // የተጠቃሚውን መብት እንፈትሻለን
+    AuthHelper::checkRole(['system_admin', 'admin', 'mgmt', 'officer']);
+    
+    $currentLang = $_SESSION['lang'] ?? 'am';
+    $branchModel = new DashboardModel($this->db);
+
+    // የተሽከርካሪ ሁኔታ መረጃውን ከሞዴል እንጠራለን
+    $reportData = $branchModel->vehicleStatusGraph();
+
+    $data = [
+        'title'       => 'የተሽከርካሪ ሁኔታ ሪፖርት',
+        'currentLang' => $currentLang,
+        'reportData'  => $reportData // ዳታውን ወደ ቪው እናስተላልፋለን
+    ];
+    
+    $this->render('vehicle-status-analytics', $data);
+}
 }
