@@ -47,7 +47,7 @@ $role = $_SESSION['user']['role'] ?? '';
       <span class="badge badge-primary float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px;">
          <?= number_format($total_bureaus) ?> ቢሮና ተጠሪ ተቋማት
       </span>
-      <i class="fas fa-id-card fa-2x text-primary mb-3 mt-2"></i>
+      <i class="fas fa-landmark fa-2x text-info mb-3 mt-2"></i>
       <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">ቢሮና ተጠሪ ተቋማት</h6>
     </div>
   </div>
@@ -59,9 +59,9 @@ $role = $_SESSION['user']['role'] ?? '';
           <div class="report-type-card card card-outline card-success h-100 shadow-sm" style="border-radius: 12px;">
             <div class="card-body text-center py-4 d-flex flex-column align-items-center justify-content-center position-relative">
               <span class="badge badge-success float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px;">
-                <?= number_format($total_zonal) ?> Total
+                <?= number_format($total_zonal) ?> ዞኖችና ወረዳዎች
               </span>
-              <i class="fas fa-industry fa-2x text-success mb-3 mt-2"></i>
+              <i class="fas fa-network-wired fa-2x text-warning mb-3 mt-2"></i>
               <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">አስተዳደራዊ መዋቅር</h6>
             </div>
           </div>
@@ -74,7 +74,7 @@ $role = $_SESSION['user']['role'] ?? '';
               <span class="badge badge-warning float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px; color: #ffffff;">
                 <?= number_format($total_vichel) ?> Total
               </span>
-              <i class="fas fa-handshake fa-2x text-warning mb-3 mt-2"></i>
+              <i class="fas fa-car fa-2x text-primary mb-3 mt-2"></i>
               <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">ተሽከርካሪዎቹ ያለበት ሁኔታ</h6>
             </div>
           </div>
@@ -88,7 +88,7 @@ $role = $_SESSION['user']['role'] ?? '';
       <span class="badge badge-primary float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px;">
          <?= number_format($total_vichel) ?> Total
       </span>
-      <i class="far fa-lightbulb fa-2x text-primary mb-3 mt-2"></i>
+      <i class="fas fa-truck fa-2x text-info mb-3 mt-2"></i>
       <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">ተሸከርካሪዎቹ በአገልግሎት ዓይነት</h6>
     </div>
   </div>
@@ -102,8 +102,8 @@ $role = $_SESSION['user']['role'] ?? '';
               <span class="badge badge-success float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px;">
                 <?= number_format($total_vichel) ?> Total
               </span>
-              <i class="fas fa-sitemap fa-2x text-success mb-3 mt-2"></i>
-              <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">ተሽከርካሪዎቹ ያሉበት ሁኔታ</h6>
+              <i class="fas fa-chart-line fa-2x text-success mb-3 mt-2"></i>
+              <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">ተጨማሪ መረጃዎች</h6>
             </div>
           </div>
         </div>
@@ -115,7 +115,7 @@ $role = $_SESSION['user']['role'] ?? '';
               <span class="badge badge-warning float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px; color: #ffffff;">
                 <?= number_format($total_vichel) ?> Total
               </span>
-              <i class="fas fa-users-cog fa-2x text-warning mb-3 mt-2"></i>
+              <i class="fas fa-car-side fa-2x text-primary mb-3 mt-2"></i>
               <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">ተሽከርካሪዎቹ በእድሜ</h6>
             </div>
           </div>

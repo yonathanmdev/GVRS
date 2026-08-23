@@ -65,10 +65,13 @@ public function reportView(): void
     $thirdSelect  = $_GET['third_select'] ?? '';
     $fourthSelect = $_GET['fourth_select'] ?? ''; 
 
-    // 2. የተመረጠውን report_type መሠረት በማድረግ 2ተኛውን ዝርዝር እናመጣለን
     if ($reportType === 'regional') {
-        $secondList = $branchModel->getRegionalBranches();
-    } 
+        // 1. የመጀመሪያው የቢሮ ዝርዝር (ለ 2ተኛው ሳጥን)
+        $secondList = $branchModel->getRegionalBranches(); 
+
+        // 2. ሁለተኛው የቢሮ ዝርዝር (ለ 4ተኛው ሳጥን)
+        $fourthList = $branchModel->getRegionalBranches2();
+    }
     else if ($reportType === 'agency') {
         $secondList = $branchModel->getRegionalBranches(); 
     }
@@ -81,9 +84,10 @@ public function reportView(): void
     else if ($reportType === 'wereda') {
         $secondList = $branchModel->getAdministrativeBranches(); 
     }
-    // ✅ ሠንጠረዥ/ሳጥኑ ከላይ ከፍ ብሎ ከሌሎቹ ጋር እኩል እንዲቀመጥ እዚህ ጋር አደረግነው
     else if ($reportType === 'calls') {
         $secondList = $branchModel->getbytype(null); 
+        // ለ calls ሲሆን 4ተኛውን ሳጥን በፈለጉት መልኩ መሙላት ከፈለጉ እዚህ ጋር ማድረግ ይችላሉ
+        // $fourthList = $branchModel->getbytype(null); 
     }
 
     // 3. 2ተኛው ሳጥን ተመርጦ ከመጣ 3ተኛውን እናመጣለን
@@ -92,21 +96,18 @@ public function reportView(): void
             $thirdList = $branchModel->getRegional2ndBranches($secondSelect);
         }
         else if ($reportType === 'department') {
-            // መምሪያ ተመርጦ ሲመጣ, በየትኛው ዞን ውስጥ እንዳለ እናመጣለን
             $thirdList = $branchModel->getAdministrativeBranches($secondSelect);
         }
         else if ($reportType === 'wereda') {
-            // ዞኑ ተመርጦ ሲመጣ, በዛ ስር ያሉትን ወረዳዎች እናመጣለን
             $thirdList = $branchModel->getAdministrative2ndBranches($secondSelect);
         }
         else if ($reportType === 'calls') {
-        // በመጠሪያ ስማቸው ሲመረጥ የቅርንጫፍ አይነት ዝርዝር እናመጣለን
-        $secondList = $branchModel->getbytype(null); 
-    }
+            // እንደግል ፍላጎትዎ እዚህም ሊስተካከል ይችላል
+        }
     }
 
-    // 4. አራተኛው ሳጥን (እንደ ደረጃቸው/ዓይነት)
-    $fourthList = $branchModel->getbytype(null); 
+    // ትኩረት፡ ከዚህ በታች የነበረው ' $fourthList = $branchModel->getbytype(null); ' ተነስተዋል 
+    // ምክንያቱም የ regional ሪፖርት ሲመረጥ ዳታውን እንዳይሸፍነው (overwrite እንዳያደርገው)
 
     $data = [
         'title'        => 'የሪፖርት ማጣሪያ ፎርም',
@@ -142,27 +143,21 @@ public function report1controller(): void
     $thirdSelect  = $_GET['third_select'] ?? '';
     $fourthSelect = $_GET['fourth_select'] ?? '';
 
-    /* --- 🔍 የዲባግ ማረጋገጫ ስክሪን ---
-    echo "<div style='background:#111; color:#0f0; padding:12px; margin:10px; font-family:monospace; z-index:9999; position:relative;'>";
-    echo "<h3>--- ዴቨሎፐር ዲባግ ስክሪን (Report 1) ---</h3>";
-    echo "የተቀበለው ሪኬስት ዓይነት (Request Method): " . $_SERVER['REQUEST_METHOD'] . "<br>";
-    echo "የተያዘው report_type ቫልዩ: [ <b>" . ($reportType ?: 'ባዶ ነው (አልተመረጠም)') . "</b> ]<br>";
-    echo "የተያዘው second_select ቫልዩ: [ <b>" . ($secondSelect ?: 'ባዶ ነው') . "</b> ]<br>";
-    echo "የተያዘው third_select ቫልዩ: [ <b>" . ($thirdSelect ?: 'ባዶ ነው') . "</b> ]<br>";
-    echo "የተያዘው fourth_select ቫልዩ: [ <b>" . ($fourthSelect ?: 'ባዶ ነው') . "</b> ]<br>";
-    echo "</div>";
-    // ----------------------------------------------------*/
-
-    // 2. 1ኛው ሳጥን ሲመረጥ 2ተኛውን ዝርዝር እናመጣለን
+    // 2. 1ኛው ሳጥን ሲመረጥ 2ተኛውን እና 4ተኛውን ዝርዝር (ለ regional የተለየውን ጨምሮ) እናመጣለን
     if ($reportType === 'regional') {
+        // የክልል ቢሮዎች (ለ 2ተኛው ሳጥን)
         $secondList = $branchModel->getRegionalBranches();
+        
+        // የክልል ቢሮዎች መምሪያዎቻቸውን ወይም ሁለተኛውን የቢሮ ዝርዝር (ለ 4ተኛው ሳጥን)
+        $fourthList = $branchModel->getRegionalBranches2();
     } 
     else if ($reportType === 'administrative') {
         $secondList = $branchModel->getAdministrativeBranches(); 
+        // ለአስተዳደር ሪፖርት 4ተኛው በነባሪ በስተመጨረሻው ይሞላል
     }
 
     // 3. 2ተኛው ሳጥን ተመርጦ ሲመጣ 3ተኛውን ዝርዝር እናመጣለን
-    if (!empty($secondSelect)) {
+    if (!empty($secondSelect) && $secondSelect !== 'all') {
         if ($reportType === 'regional') {
             $thirdList = $branchModel->getRegional2ndBranches($secondSelect);
         } 
@@ -171,12 +166,13 @@ public function report1controller(): void
         }
     }
 
-    // 4. 4ተኛው ሳጥን (branch_type) ራሱን ችሎ ከሞዴል ይሞላል
-    $fourthList = $branchModel->getbytype(null); 
+    // 4. ለ regional ካልሆነ በስተቀር 4ተኛው ሳጥን (branch_type) ራሱን ችሎ ከሞዴል ይሞላል
+    if ($reportType !== 'regional') {
+        $fourthList = $branchModel->getbytype(null); 
+    }
 
     // =========================================================================
-    // 5. 🎯 ለዚህኛው ሪፖርት 'getDynamicVehicleReport' ን ብቻ እንጠቀማለን 
-    //    ('getVehicleReportAdvanced' ደግሞ ለራሱ ለሌላው የተለየ ስራው እንዳለ ይቆያል)
+    // 5. 🎯 ለዚህኛው ሪፖርት የሚገባውን ዳታ በ getDynamicVehicleReport እንቀበላለን
     // =========================================================================
     $reportData = $branchModel->getDynamicVehicleReport([
         'report_type'   => $reportType,
@@ -198,7 +194,7 @@ public function report1controller(): void
     }
 
     // ለ) 2ኛው ማጣሪያ (Second Select)
-    if (!empty($secondSelect)) {
+    if (!empty($secondSelect) && $secondSelect !== 'all') {
         $targetSecondList = [];
         if ($reportType === 'regional') {
             $targetSecondList = $branchModel->getRegionalBranches();
@@ -217,7 +213,7 @@ public function report1controller(): void
     }
 
     // ሐ) 3ተኛው ማጣሪያ (Third Select)
-    if (!empty($thirdSelect)) {
+    if (!empty($thirdSelect) && $thirdSelect !== 'all') {
         foreach ($thirdList as $item) {
             $tId = $item['id'] ?? $item['branch_id'] ?? '';
             $tName = $item['name'] ?? $item['branch_name'] ?? '';
@@ -228,8 +224,8 @@ public function report1controller(): void
         }
     }
 
-    // መ) 4ተኛው ማጣሪያ (Fourth Select / Branch Type)
-    if (!empty($fourthSelect)) {
+    // መ) 4ተኛው ማጣሪያ (Fourth Select)
+    if (!empty($fourthSelect) && $fourthSelect !== 'all') {
         foreach ($fourthList as $item) {
             $fId = $item['id'] ?? $item['type_id'] ?? '';
             $fName = $item['name'] ?? $item['type_name'] ?? '';
@@ -240,7 +236,7 @@ public function report1controller(): void
         }
     }
 
-    // የተመረጡትን ክፍሎች በቅደም ተከተል ማቀናጀት (በቀስት ምልክት " > " ተለያይተው እንዲወጡ)
+    // የተመረጡትን ክፍሎች በቅደም ተከተል ማቀናጀት
     if (!empty($filterPathParts)) {
         $reportTitle = 'የተሽከርካሪዎች ማጠቃለያ ሪፖርት - ' . implode(' > ', $filterPathParts);
     }
@@ -249,13 +245,16 @@ public function report1controller(): void
     $data = [
         'title'       => $reportTitle,
         'currentLang' => $currentLang,
+        'r_type'      => $reportType,
+        'secondSelect'=> $secondSelect,
+        'thirdSelect' => $thirdSelect,
+        'fourthSelect'=> $fourthSelect,
         'secondList'  => $secondList,
         'thirdList'   => $thirdList,
         'fourthList'  => $fourthList,
         'reportData'  => $reportData
     ];
 
-    // ሪፖርት 1 ቪው ፋይልን እንጠራዋለን
     $this->renderPrintable('report1_view', $data);
 }
 
