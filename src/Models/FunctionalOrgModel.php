@@ -124,8 +124,6 @@ public function updateBureau(array $data): array
     if (!$existing) {
         return ['status' => 'error', 'message' => 'Branch not found.'];
     }
-
-    $newType = $data['branch_type'];
     $branchId = (int) $existing['id'];
 
     $updateSql = "UPDATE branches
@@ -133,13 +131,12 @@ public function updateBureau(array $data): array
                       branch_type = :branch_type,
                       updated_by = :updated_by
                   WHERE uuid = :uuid
-                    AND is_active <> 3
-                    AND branch_type IN ('bureau', 'authority','commission','institution','enterprise','memriya','tsfet_bet')";
+                    AND is_active <> 3";
 
     $stmt = $this->db->prepare($updateSql);
     $stmt->execute([
         'name'        => $data['name'],
-        'branch_type' => $newType,
+        'branch_type' => $data['branch_type'],
         'updated_by'  => $data['updated_by'],
         'uuid'        => $data['uuid'],
     ]);
@@ -161,7 +158,6 @@ public function createAccountableOffices(array $data): int
             FROM branches
             WHERE id = :parent_id
               AND is_active <> 3
-              AND branch_type IN ('bureau', 'authority','commission','institution','enterprise','memriya','tsfet_bet')
             LIMIT 1
         ";
 
@@ -260,17 +256,31 @@ public function createAccountableOffices(array $data): int
 }
 public function getaccountableOfficesWithBureau(int $level, ?int $bureau_id = null, ?string $search = null, int $limit = 20, int $offset = 0): array
 {
+    // Pull allowed types from branch_type, excluding 'bureau' —
+    // same eligible set used by countOfficesWithBureau(), so
+    // the count and the list always agree.
+    $allTypes = array_column($this->getAllBranchTypes(), 'type_in_eng');
+    $allowedTypes = array_values(array_diff($allTypes, ['bureau']));
+
+    $typePlaceholders = [];
+    $params = [];
+
+    foreach ($allowedTypes as $i => $type) {
+        $key = "type_{$i}";
+        $typePlaceholders[] = ":{$key}";
+        $params[$key] = $type;
+    }
+
+    $inClause = implode(', ', $typePlaceholders);
+
     $sql = "SELECT 
                 aco.id, aco.uuid, aco.name AS office_name, aco.branch_type, aco.level,
                 aco.functional_path, aco.organization_id, aco.is_active,
                 b.id AS bureau_id, b.uuid AS bureau_uuid, b.name AS bureau_name, b.branch_type AS bureau_type
             FROM branches aco
             JOIN branches b ON b.id = aco.functional_parent_id
-            WHERE aco.branch_type IN ('authority','commission','institution','enterprise','tsfet_bet','college')
-            AND aco.is_active <> 3
-            AND aco.level = :level";
-
-    $params = [];
+            WHERE aco.level = :level
+              AND aco.branch_type IN ({$inClause})";
 
     if ($bureau_id !== null) {
         $sql .= " AND aco.functional_parent_id = :bureau_id";
@@ -294,16 +304,29 @@ public function getaccountableOfficesWithBureau(int $level, ?int $bureau_id = nu
 
     return $stmt->fetchAll(\PDO::FETCH_ASSOC);
 }
-
 public function countOfficesWithBureau(int $level, ?string $bureau_id = null, ?string $search = null): int
 {
+    // Pull allowed types from branch_type, excluding 'bureau' —
+    // this count is specifically for non-bureau offices under a bureau.
+    $allTypes = array_column($this->getAllBranchTypes(), 'type_in_eng');
+    $allowedTypes = array_values(array_diff($allTypes, ['bureau']));
+
+    $placeholders = [];
+    $params = ['level' => $level];
+
+    foreach ($allowedTypes as $i => $type) {
+        $key = "type_{$i}";
+        $placeholders[] = ":{$key}";
+        $params[$key] = $type;
+    }
+
+    $inClause = implode(', ', $placeholders);
+
     $sql = "SELECT COUNT(*) FROM branches w
             JOIN branches z ON z.id = w.functional_parent_id
-            WHERE w.branch_type IN ('college', 'authority','commission','institution','enterprise','memriya','tsfet_bet')
+            WHERE w.branch_type IN ({$inClause})
             AND w.is_active <> 3
             AND w.level = :level";
-
-    $params = ['level' => $level];
 
     if ($bureau_id !== null) {
         $sql .= " AND w.functional_parent_id = :bureau_id";
@@ -320,6 +343,7 @@ public function countOfficesWithBureau(int $level, ?string $bureau_id = null, ?s
     return (int) $stmt->fetchColumn();
 }
 
+
 public function updateAccountableOffice(array $data): ?int
 {
     try {
@@ -332,8 +356,6 @@ public function updateAccountableOffice(array $data): ?int
             FROM branches
             WHERE uuid = :uuid
               AND is_active <> 3
-              AND branch_type IN ('college', 'authority','commission','institution','enterprise','memriya','tsfet_bet' 
-              )
             LIMIT 1
         ";
 
@@ -359,7 +381,6 @@ public function updateAccountableOffice(array $data): ?int
             FROM branches
             WHERE id = :parent_id
               AND is_active <> 3
-              AND branch_type IN ('bureau', 'authority', 'enterprise', 'institution', 'commission')
             LIMIT 1
         ";
 
@@ -424,6 +445,58 @@ public function updateAccountableOffice(array $data): ?int
     }
 }
 
+public function getAllAccountableOfficesforSelectedBureau(int $level, ?int $bureau_id = null): array
+{
+    $allTypes = array_column($this->getAllBranchTypes(), 'type_in_eng');
+    $allowedTypes = array_values(array_diff($allTypes, ['memriya']));
+
+    $typePlaceholders = [];
+    $params = [];
+
+    foreach ($allowedTypes as $i => $type) {
+        $key = "type_{$i}";
+        $typePlaceholders[] = ":{$key}";
+        $params[$key] = $type;
+    }
+
+    $inClause = implode(', ', $typePlaceholders);
+
+    $sql = "SELECT 
+                aco.id, aco.uuid, aco.name AS office_name, aco.branch_type, aco.level,
+                aco.functional_path, aco.organization_id, aco.is_active,
+                b.id AS bureau_id, b.uuid AS bureau_uuid, b.name AS bureau_name, b.branch_type AS bureau_type
+            FROM branches aco
+            JOIN branches b ON b.id = aco.functional_parent_id
+            WHERE aco.level = :level
+              AND aco.branch_type IN ({$inClause})";
+
+    if ($bureau_id !== null) {
+        $sql .= " AND aco.functional_parent_id = :bureau_id";
+        $params['bureau_id'] = $bureau_id;
+    }
+
+    $sql .= " ORDER BY b.name ASC, aco.name ASC";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->bindValue('level', $level, \PDO::PARAM_INT);
+    foreach ($params as $key => $val) {
+        $stmt->bindValue($key, $val);
+    }
+    $stmt->execute();
+
+    return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+}
+public function getAllBranchTypes(): array
+{
+    $sql = "SELECT id, type_in_eng, type_in_am
+            FROM branch_type
+            ORDER BY id ASC";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute();
+
+    return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+}
  public function softDelete(string $id, string $userId, string $reason, string $source): array
 {
     // 1. Find the branch first
@@ -442,8 +515,8 @@ public function updateAccountableOffice(array $data): ?int
     }
 
     // 2. Pick the correct path column based on branch_type
-    $functionalTypes = ['bureau', 'authority', 'enterprise', 'commission',  'teteri_mesriyabet', 'memriya'];
-    $pathColumn = in_array($branch['branch_type'], $functionalTypes, true) ? 'functional_path' : 'admin_path';
+    $adminTypes = ['regio', 'zone', 'ketema_woreda', 'woreda',  'kifle_ketema'];
+    $pathColumn = in_array($branch['branch_type'], $adminTypes, true) ? 'admin_path' : 'functional_path';
     $path = $branch[$pathColumn];
 
     if (empty($path)) {

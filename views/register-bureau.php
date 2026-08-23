@@ -34,24 +34,12 @@ $is_bureau_page = true; ?>
           <tr id="row-<?=  ViewHelper::e($row['uuid']) ?>">
             <td><?= $index + 1 ?></td>
             <td><?=  ViewHelper::e($row['name']) ?></td>
-            <td>
-              <?php
-$branch_type = $row['branch_type'];
-
-$typeMap = [
-    'bureau' => 'ቢሮ',
-    'authority' => 'ባለስልጣን',
-    'commission'=>'ኮሚሽን',
-    'institution' =>'ኢንስቲቲዩት',
-    'enterprise' =>'ኢንተርፕሪይዝ',
-    'memriya'=>'መምሪያ',
-    'tsfet_bet'=>'ጽፈት ቤት'
-
-];
-
-echo ViewHelper::e($typeMap[$branch_type]);
-?>
-            </td>
+           <td>
+          <?php
+          $branch_type = $row['branch_type'];
+          echo ViewHelper::e($branchTypeMap[$branch_type] ?? $branch_type);
+          ?>
+        </td>
           <td class="text-center align-middle">
   <div class="btn-group btn-group-sm shadow-sm" role="group">
                <button class="btn btn-outline-secondary btn-sm  edit-branch" 
@@ -96,7 +84,7 @@ echo ViewHelper::e($typeMap[$branch_type]);
 
         <div class="modal-header">
           <h6 class="modal-title font-weight-bold">
-            <i class="fas fa-plus mr-1"></i> ቢሮ
+            <i class="fas fa-plus mr-1"></i> የክልል ተጠሪ ተቋም
           </h6>
 
           <button type="button" class="close" data-dismiss="modal">
@@ -138,14 +126,11 @@ echo ViewHelper::e($typeMap[$branch_type]);
               required
             >
               <option value="" disabled selected>ይምረጡ</option>
-              <option value="bureau">ቢሮ</option>
-              <option value="authority">ባለ ስልጣን</option>
-              <option value="commission">ኮሚሽን</option>
-              <option value="institution">ኢንስቲቲዩት</option>
-              <option value="enterprise">ኢንተርፕራይዝ</option>
-              <option value="memriya">መምሪያ</option>
-              <option value="tsfet_bet">ጽፈት ቤት</option>
-
+             <?php foreach ($branchTypes as $type): ?>
+        <option value="<?= ViewHelper::e($type['type_in_eng']) ?>">
+            <?= ViewHelper::e($type['type_in_am']) ?>
+        </option>
+    <?php endforeach; ?>
             </select>
           </div>
 

@@ -16,7 +16,6 @@ class VehicleController extends BaseController
 
         $userId = $_SESSION['user']['id'] ?? null;
         $currentLang = $_SESSION['lang'] ?? 'am';
-        $branchType = ['bureau', 'authority','commission','institution','enterprise','memriya','tsfet_bet'];
         $bureaulevel = 1;
         $bureaus = [];
         $zones = [];
@@ -33,6 +32,9 @@ class VehicleController extends BaseController
         }
         
         $model = new FunctionalOrgModel($this->db);
+        $branchTypeRows = $model->getAllBranchTypes();
+        $branchType     = array_column($branchTypeRows, 'type_in_eng');
+
         $bureaus = $model->getAll($bureaulevel, $branchType);      
         $zones = $model->getAll($zonelevel, $zones_types);
         $memriya = $model->getAll($memriyalevel, $memriya_types);
@@ -68,7 +70,7 @@ class VehicleController extends BaseController
             return;
         }
  
-        $rows = $orgModel->getaccountableOfficesWithBureau(2, $bureau['id'], null, 100, 0);
+        $rows = $orgModel->getAllAccountableOfficesforSelectedBureau(2, $bureau['id']);
  
         $options = array_map(function ($row) {
             return [
@@ -302,25 +304,71 @@ public function list(): void
     $search   = trim($_GET['search'] ?? '');
     $branchId = !empty($_GET['branch_id']) ? (int) $_GET['branch_id'] : null;
 
-    $vehicleModel = new VehicleModel($this->db);
-    
-    $vehicles     = $vehicleModel->getRegisteredVehicles($branchId, $limit, $offset, $search);
-    $totalCount   = $vehicleModel->countRegisteredVehicles($branchId, $search);
-    $totalPages   = (int) ceil($totalCount / $limit);
-    $brands       = $vehicleModel->getDistinctBrands();
+    $vehicleModel   = new VehicleModel($this->db);
+    $functionModel  = new FunctionalOrgModel($this->db);
 
-    //$branchModel = new FunctionalOrgModel($this->db);
-    //$branches    = $branchModel->getAllForFilter();
+    $allTypes = array_column($functionModel->getAllBranchTypes(), 'type_in_eng');
+
+    $categoryConfig = [
+        'regional' => [
+            'level' => 1,
+            'types' => $allTypes,
+        ],
+      'institution' => [
+    'level'  => 2,
+    'types'  => array_diff($allTypes, ['memriya']),
+],
+        'department' => [
+            'level' => 2,
+            'types' => array_values(array_intersect($allTypes, ['memriya'])),
+        ],
+        'woreda' => [
+            'level' => 2,
+            'types' => ['woreda', 'ketema_woreda', 'kifle_ketema'],
+        ],
+    ];
+
+    $selectedCategory = trim($_GET['category'] ?? '');
+    $config = $categoryConfig[$selectedCategory] ?? ['level' => null, 'types' => null];
+
+    $level       = $config['level'];
+    $branchTypes = $config['types'];
+
+    $categoryBranches = [];
+    if ($selectedCategory !== '' && isset($categoryConfig[$selectedCategory])) {
+        $categoryBranches = $functionModel->getAll($level, $branchTypes);
+    }
+
+    // Resolve the selected branch's display name for the summary
+    // panel, by matching branchId against the category's own list.
+    $selectedBranchName = null;
+
+    if (!empty($branchId) && !empty($categoryBranches)) {
+        foreach ($categoryBranches as $branch) {
+            if ((string) $branch['id'] === (string) $branchId) {
+                $selectedBranchName = $branch['name'];
+                break;
+            }
+        }
+    }
+
+    $vehicles   = $vehicleModel->getRegisteredVehicles($branchId, $limit, $offset, $search, $level, $branchTypes);
+    $totalCount = $vehicleModel->countRegisteredVehicles($branchId, $search, $level, $branchTypes);
+    $totalPages = (int) ceil($totalCount / $limit);
+    $brands     = $vehicleModel->getDistinctBrands();
 
     $this->render('vehicles-list', [
-        'vehicles'       => $vehicles,
-        'brands'         => $brands,
-        'selectedBranch' => $branchId,
-        'search'         => $search,
-        'page'           => $page,
-        'totalPages'     => $totalPages,
-        'totalCount'     => $totalCount,
-        'currentLang'    => $_SESSION['lang'] ?? 'am'
+        'vehicles'           => $vehicles,
+        'brands'             => $brands,
+        'selectedBranch'     => $branchId,
+        'selectedCategory'   => $selectedCategory,
+        'categoryBranches'   => $categoryBranches,
+        'selectedBranchName' => $selectedBranchName,
+        'search'             => $search,
+        'page'               => $page,
+        'totalPages'         => $totalPages,
+        'totalCount'         => $totalCount,
+        'currentLang'        => $_SESSION['lang'] ?? 'am',
     ]);
 }
 public function editData(): void

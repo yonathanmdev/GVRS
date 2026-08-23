@@ -52,9 +52,26 @@ class VehicleModel
         throw $e;
     }
 }
+public function getRegisteredVehicles(
+    $branchId = null,
+    int $limit = 25,
+    int $offset = 0,
+    string $search = '',
+    ?int $level = null,
+    ?array $branchTypes = null
+): array {
 
-public function getRegisteredVehicles($branchId = null, int $limit = 25, int $offset = 0, string $search = ''): array
-{
+    $params = [];
+
+    $typePlaceholders = [];
+    if (!empty($branchTypes)) {
+        foreach (array_values($branchTypes) as $i => $type) {
+            $key = "btype_{$i}";
+            $typePlaceholders[] = ":{$key}";
+            $params[$key] = $type;
+        }
+    }
+
     $sql = "SELECT 
                 v.id,
                 v.uuid,
@@ -91,13 +108,18 @@ public function getRegisteredVehicles($branchId = null, int $limit = 25, int $of
 
             WHERE v.is_active <> 3" .
             (!empty($branchId) ? " AND v.branch_id = :branch_id" : "") .
+            ($level !== null ? " AND br.level = :level" : "") .
+            (!empty($branchTypes) ? " AND br.branch_type IN (" . implode(', ', $typePlaceholders) . ")" : "") .
             (!empty($search) ? " AND (
                 v.plate_number   LIKE :search1 OR
                 v.model          LIKE :search2 OR
                 v.chassis_number LIKE :search3 OR
                 v.engine_number  LIKE :search4 OR
                 b.brand_name     LIKE :search5 OR
-                ctl.cartype      LIKE :search6
+                ctl.cartype      LIKE :search6 OR
+                br.name          LIKE :search7 OR
+                z.name           LIKE :search8
+
             )" : "") . "
             ORDER BY v.created_at DESC
             LIMIT :lim OFFSET :offs";
@@ -107,9 +129,15 @@ public function getRegisteredVehicles($branchId = null, int $limit = 25, int $of
     if (!empty($branchId)) {
         $stmt->bindValue(':branch_id', $branchId, \PDO::PARAM_INT);
     }
+    if ($level !== null) {
+        $stmt->bindValue(':level', $level, \PDO::PARAM_INT);
+    }
+    foreach ($params as $key => $val) {
+        $stmt->bindValue(":{$key}", $val, \PDO::PARAM_STR);
+    }
     if (!empty($search)) {
         $term = '%' . $search . '%';
-        foreach (range(1, 6) as $i) {
+        foreach (range(1, 8) as $i) {
             $stmt->bindValue(":search{$i}", $term, \PDO::PARAM_STR);
         }
     }
@@ -120,28 +148,53 @@ public function getRegisteredVehicles($branchId = null, int $limit = 25, int $of
     return $stmt->fetchAll(\PDO::FETCH_ASSOC);
 }
 
-public function countRegisteredVehicles($branchId = null, string $search = ''): int
-{
+public function countRegisteredVehicles(
+    $branchId = null,
+    string $search = '',
+    ?int $level = null,
+    ?array $branchTypes = null
+): int {
+
+    $params = [];
+
+    $typePlaceholders = [];
+    if (!empty($branchTypes)) {
+        foreach (array_values($branchTypes) as $i => $type) {
+            $key = "btype_{$i}";
+            $typePlaceholders[] = ":{$key}";
+            $params[$key] = $type;
+        }
+    }
+
     $sql = "SELECT COUNT(*) AS total
             FROM vehicles v
             LEFT JOIN car_type ct     ON ct.id = v.vehicle_type AND ct.is_deleted = 0
             LEFT JOIN brand b         ON b.id = ct.brand_id
             LEFT JOIN cartypelist ctl ON ctl.id = ct.type_name
+            LEFT JOIN branches br     ON br.id = v.branch_id
             WHERE v.is_active <> 3" .
             (!empty($branchId) ? " AND v.branch_id = :branch_id" : "") .
+            ($level !== null ? " AND br.level = :level" : "") .
+            (!empty($branchTypes) ? " AND br.branch_type IN (" . implode(', ', $typePlaceholders) . ")" : "") .
             (!empty($search) ? " AND (
                 v.plate_number   LIKE :search1 OR
                 v.model          LIKE :search2 OR
                 v.chassis_number LIKE :search3 OR
                 v.engine_number  LIKE :search4 OR
                 b.brand_name     LIKE :search5 OR
-                ctl.cartype      LIKE :search6
+                ctl.cartype      LIKE :search6 
             )" : "");
 
     $stmt = $this->db->prepare($sql);
 
     if (!empty($branchId)) {
         $stmt->bindValue(':branch_id', $branchId, \PDO::PARAM_INT);
+    }
+    if ($level !== null) {
+        $stmt->bindValue(':level', $level, \PDO::PARAM_INT);
+    }
+    foreach ($params as $key => $val) {
+        $stmt->bindValue(":{$key}", $val, \PDO::PARAM_STR);
     }
     if (!empty($search)) {
         $term = '%' . $search . '%';
@@ -152,8 +205,7 @@ public function countRegisteredVehicles($branchId = null, string $search = ''): 
     $stmt->execute();
 
     return (int) $stmt->fetch(\PDO::FETCH_ASSOC)['total'];
-}
-    public function getDistinctBrands(): array
+}    public function getDistinctBrands(): array
     {
         $sql = "SELECT DISTINCT brand_name, brand_id
                 FROM view_car_details
