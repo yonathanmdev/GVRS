@@ -75,6 +75,24 @@ public function getRegionalBranches(): array
 }
 
 
+
+public function getRegionalBranches2(): array
+{
+    // ምሳሌ፡ የክልል ቢሮዎችን ብቻ ለመለየት (እንደ ዳታቤዝ አወቃቀርዎ type ወይም parent_id ሊያስፈልግ ይችላል)
+    $sql = "SELECT id, name 
+            FROM branches 
+            WHERE is_active = 1 and level = 1
+              AND functional_path IS NOT NULL 
+              AND functional_path != '' 
+            ORDER BY name ASC";
+            
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute();
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
 public function getAdministrativeBranches(): array
 {
     // ምሳሌ፡ የክልል ቢሮዎችን ብቻ ለመለየት (እንደ ዳታቤዝ አወቃቀርዎ type ወይም parent_id ሊያስፈልግ ይችላል)
@@ -261,7 +279,13 @@ public function getDynamicVehicleReport($filters): array
     }
 
     if (!empty($filters['fourth_select']) && $filters['fourth_select'] !== 'all') {
-        $sql .= " AND b.branch_type = :fourth_select";
+        // የክልል ተጠሪ ሪፖርት ሲሆን አራተኛው ሳጥን የቢሮ ID ስለሚልክ በ b.id እናጣራለን
+        if ($r_type === 'regional') {
+            $sql .= " AND b.id = :fourth_select";
+        } else {
+            // ለሌሎች የሪፖርት አይነቶች branch_type ሆኖ መቀጠል ከፈለገ
+            $sql .= " AND b.branch_type = :fourth_select";
+        }
         $params['fourth_select'] = $filters['fourth_select'];
     }
 

@@ -151,7 +151,24 @@ $secondSelect = $_GET['second_select'] ?? ''; // ሁለተኛው ሳጥን ቫ�
             ?>
         </select>
     </div>
-    
+    <!-- 4ኛ ሳጥን (ለክልል ተጠሪዎች ብቻ የሚጨምር - ቢሮውን መርጦ መምሪያውን ለመምረጥ) -->
+<div class="col-md-6" id="box_fourth" style="<?= ($r_type == 'regional') ? '' : 'display:none;' ?>">
+    <label for="fourth_select" class="form-label fw-bold">
+        የክልል ቢሮዎች መምሪያዎቻቸውን ጨምሮ
+    </label>
+    <select class="form-control" id="fourth_select" name="fourth_select" onchange="this.form.submit()">
+        <option value="">-- ምረጡ --</option>
+        <option value="all" <?= (isset($_GET['fourth_select']) && $_GET['fourth_select'] == 'all') ? 'selected' : '' ?>>-- ሁሉም (All) --</option>
+        <?php 
+        if (isset($fourthList) && is_array($fourthList)) {
+            foreach ($fourthList as $item) {
+                $selected = (isset($_GET['fourth_select']) && $_GET['fourth_select'] == $item['id']) ? 'selected' : '';
+                echo "<option value='{$item['id']}' {$selected}>{$item['name']}</option>";
+            }
+        }
+        ?>
+    </select>
+</div>
 
             <div class="col-md-4">
                 <label for="fifth_select" class="form-label fw-bold ">የሚፈልጉትን የሪፖርት ዓይነት ይምረጡ</label>
@@ -217,6 +234,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 document.addEventListener("DOMContentLoaded", function() {
     // ፎርሙን ወይም የሰሚት ቁልፉን እንይዛለን (እንደ ሲስተምዎ አወቃቀር id ወይም class ማስተካከል ይችላሉ)
+    
+    // ራዲዮ በተኖቹ ሲቀየሩ የትኛው ሳጥን መታየት እንዳለበት ለመቆጣጠር
+const radioRegional = document.getElementById('type_regional');
+const boxFourth = document.getElementById('box_fourth');
+
+// ራዲዮ በተኑ ሲመረጥ
+if (radioRegional && radioRegional.checked) {
+    if(boxFourth) boxFourth.style.display = 'block';
+}
+    
     const reportForm = document.getElementById("reportFilterForm"); // ፎርሙ የሚጠቀምበት id 
     
     if (reportForm) {
