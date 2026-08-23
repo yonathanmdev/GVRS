@@ -483,10 +483,9 @@ public function zonegraph(): array
                 COALESCE(bt.type_in_am, b.branch_type) AS CallerName, 
                 COUNT(v.id) AS vehicle_count
             FROM branches b
-            LEFT JOIN branch_type bt ON b.branch_type = bt.type_in_eng
+            LEFT JOIN branch_type bt ON TRIM(b.branch_type) = TRIM(bt.type_in_eng)
             LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1
             WHERE b.is_active = 1 
-              AND b.level = 1
               AND b.admin_path IS NOT NULL 
               AND b.admin_path != '' 
             GROUP BY b.id, b.name, b.branch_type, bt.type_in_am
@@ -497,4 +496,29 @@ public function zonegraph(): array
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+
+
+public function vehicleStatusGraph(): array
+{
+    $sql = "SELECT 
+                CASE 
+                    WHEN LOWER(TRIM(vehicle_status)) = 'active' THEN 'በስራ ላይ ያለ'
+                    WHEN LOWER(TRIM(vehicle_status)) = 'lost' THEN 'የጠፋ'
+                    WHEN LOWER(TRIM(vehicle_status)) = 'destroyed' THEN 'የወደመ'
+                    WHEN LOWER(TRIM(vehicle_status)) = 'disposed' THEN 'የተወገደ'
+                    ELSE COALESCE(vehicle_status, 'ለይቶ የማይታወቅ')
+                END AS CallerName, 
+                COUNT(id) AS vehicle_count
+            FROM vehicles
+            WHERE is_active = 1 
+              AND deleted_at IS NULL
+            GROUP BY vehicle_status
+            ORDER BY vehicle_count DESC";
+            
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute();
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 }

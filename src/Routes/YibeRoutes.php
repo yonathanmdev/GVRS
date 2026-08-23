@@ -8,7 +8,8 @@ return [
     'report1_view' => ['DashboardController', 'report1controller', true],
     'report2_view' => ['DashboardController', 'report2controller', true],
     'bureau-analytics' => ['DashboardController', 'bureausGraphView', true],
-    
+    'zone-analytics' => ['DashboardController', 'zoneAnalyticsView', true],
+    'vehicle-status-analytics' => ['DashboardController', 'vehicleStatusView', true],
 
 
 /*የሶስቱንም አፈጻጸም የሚያወጣው 
