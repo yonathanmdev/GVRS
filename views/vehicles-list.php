@@ -949,13 +949,15 @@ $isFilterActive = $selectedCategory !== '' || !empty($selectedBranch);
         'lost'      => 'የጠፋ',
         'destroyed' => 'የወደመ',
         'disposed'  => 'የተወገደ',
+        'out_of_service'=>'በብልሽት የቆመ'
     ];
 
     $badgeMap = [
         'active'    => 'success',
-        'lost'      => 'warning',
+        'lost'      => 'danger',
         'destroyed' => 'danger',
         'disposed'  => 'secondary',
+        'out_of_service'=>'warning'
     ];
 
     $statusText = $statusMap[$status] ?? $status;
