@@ -1,6 +1,6 @@
 <?php
 return [
-    'brand_name' => 'Government Vehicle Registration System',
+    'brand_name' => 'Government Vehicle and Machinery Registration System',
     'login_page' => 'Login Page',
     'login_welcome' => 'Welcome',
     'login_back' => 'Back',

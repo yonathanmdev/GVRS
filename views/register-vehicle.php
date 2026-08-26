@@ -1900,7 +1900,9 @@ $is_vehicle_page = true;
                                                         <option value="disposed">
                                                             የተወገደ
                                                         </option>
-
+                                                         <option value="out_of_service">
+                                                            በብልሽት የቆመ
+                                                        </option>
                                                     </select>
 
                                                 </div>
