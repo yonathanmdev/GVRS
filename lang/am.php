@@ -1,6 +1,6 @@
 <?php
 return [
-    'brand_name' => 'የመንግሥት መኪና ምዝገባ ሥርዓት',
+    'brand_name' => 'የመንግሥት ተሽከርካሪ ና ማሽነሪ ምዝገባ ሥርዓት',
     'login_page' => 'መግቢያ ገጽ',
     'login_welcome' => 'እንኳን ደህና',
     'login_back' => 'መጡ',

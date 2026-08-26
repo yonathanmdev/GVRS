@@ -1,6 +1,3 @@
-<?php 
-use App\Helpers\ViewHelper;  
-?>
 <div class="modal fade" id="editBranchModal">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -10,7 +7,7 @@ use App\Helpers\ViewHelper;
         <!-- 1. Modal Header -->
         <div class="modal-header">
           <h6 class="modal-title font-weight-bold">
-            <i class="fas fa-edit mr-1"></i>ቢሮ አስተካክል
+            <i class="fas fa-edit mr-1"></i>ብራንድ አስተካክል
           </h6>
 
           <button type="button" class="close" data-dismiss="modal">
@@ -23,7 +20,7 @@ use App\Helpers\ViewHelper;
 
           <input 
             type="hidden" 
-            id="edit_branch_id" 
+            id="edit_car_id" 
             name="id"
           >
 
@@ -39,40 +36,15 @@ use App\Helpers\ViewHelper;
 
             <input 
               type="text" 
-              id="edit_branch_name" 
-              name="branch_name" 
+              id="edit_car_name" 
+              name="car_car_name" 
               class="form-control form-control-sm" 
               required
             >
           </div>
 
-          <div class="form-group mb-2">
-            <label 
-              for="edit_branch_type" 
-              class="mb-1"
-            >
-              <small class="font-weight-bold">
-                ዓይነት
-              </small>
-            </label>
-
-            <select 
-              class="form-control form-control-sm" 
-              id="edit_branch_type" 
-              name="branch_type" 
-              required
-            >
-               <option value="" disabled selected>ይምረጡ</option>
-               <?php foreach ($branchTypes as $type): ?>
-        <option value="<?= ViewHelper::e($type['type_in_eng']) ?>">
-            <?= ViewHelper::e($type['type_in_am']) ?>
-        </option>
-    <?php endforeach; ?>
-            </select>
-          </div>
-
-        </div>
-
+       
+</div>
         <!-- Footer -->
         <div class="modal-footer justify-content-between">
 

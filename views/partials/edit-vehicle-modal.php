@@ -1000,6 +1000,9 @@
                                         <option value="disposed">
                                             የተወገደ
                                         </option>
+                                        <option value="out_of_service">
+                                                            በብልሽት የቆመ
+                                                        </option>
 
                                     </select>
 
@@ -2061,7 +2064,8 @@ function updateRowInPlace(v) {
                 'የወደመ',
 
             disposed:
-                'የተወገደ'
+                'የተወገደ',
+            'out_of_service':'በብልሽት የቆመ',
         };
 
 
@@ -2074,13 +2078,14 @@ function updateRowInPlace(v) {
                 'success',
 
             lost:
-                'warning',
+                'danger',
 
             destroyed:
                 'danger',
 
             disposed:
-                'secondary'
+                'danger',
+            'out_of_service':'warning',
         };
 
 

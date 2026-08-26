@@ -37,84 +37,45 @@ $role = $_SESSION['user']['role'] ?? '';
 
     <div class="row">
 
-      <?php if ($role === 'system_admin' || $role === 'org_admin'): ?>
-        
-        <div class="col-md-4 col-sm-6 mb-3">
-          <div class="report-type-card card card-outline card-info h-100 shadow-sm" style="border-radius: 12px;">
-            <div class="card-body text-center py-4 d-flex flex-column align-items-center justify-content-center position-relative">
-              <span class="badge badge-info float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px;">
-                <?= number_format($total_users) ?> Total
-              </span>
-              <i class="fas fa-users-cog fa-2x text-info mb-3 mt-2"></i>
-              <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">Users</h6>
-            </div>
-          </div>
-        </div>
+     <?php if ($role === 'system_admin' || $role === 'admin'|| $role === 'mgmt'|| $role === 'officer'|| $role === 'data_encoder'): ?>
 
         <div class="col-md-4 col-sm-6 mb-3">
-          <div class="report-type-card card card-outline card-success h-100 shadow-sm" style="border-radius: 12px;">
-            <div class="card-body text-center py-4 d-flex flex-column align-items-center justify-content-center position-relative">
-              <span class="badge badge-success float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px;">
-                <?= number_format($active_users) ?> Active
-              </span>
-              <i class="fas fa-user-check fa-2x text-success mb-3 mt-2"></i>
-              <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">Users</h6>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-4 col-sm-6 mb-3">
-          <div class="report-type-card card card-outline card-secondary h-100 shadow-sm" style="border-radius: 12px;">
-            <div class="card-body text-center py-4 d-flex flex-column align-items-center justify-content-center position-relative">
-              <span class="badge badge-secondary float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px;">
-                <?= number_format($total_branches) ?> Managed
-              </span>
-              <i class="fas fa-network-wired fa-2x text-secondary mb-3 mt-2"></i>
-              <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">በስሩ ያሉ ቅርንጫፎች</h6>
-            </div>
-          </div>
-        </div>
-      <?php endif; ?>
-
-      <?php if ($role === 'team_leader' || $role === 'officer'): ?>
-
-        <div class="col-md-4 col-sm-6 mb-3">
-  <!-- ሲነካ በቀጥታ ወደ ዓዲሱ ቻርቶች ገጽ ይወስዳል ።-->
-<a href="<?= rtrim($_ENV['BASE_URL'], '/') ?>/seeker-analytics" style="text-decoration: none; color: inherit;">
+  <!-- ሲነካ በቀጥታ ወደ አዲሱ ቻርቶች ገጽ ይወስዳል ።-->
+<a href="<?= rtrim($_ENV['BASE_URL'], '/') ?>/bureau-analytics" style="text-decoration: none; color: inherit;">
   <div class="report-type-card card card-outline card-primary h-100 shadow-sm" style="border-radius: 12px; cursor: pointer;">
     <div class="card-body text-center py-4 d-flex flex-column align-items-center justify-content-center position-relative">
       <span class="badge badge-primary float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px;">
-         <?= number_format($total_job_seekers) ?> Total
+         <?= number_format($total_bureaus) ?> ቢሮና ተጠሪ ተቋማት
       </span>
-      <i class="fas fa-id-card fa-2x text-primary mb-3 mt-2"></i>
-      <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">የስራ ፈላጊዎች ሁኔታ</h6>
+      <i class="fas fa-landmark fa-2x text-info mb-3 mt-2"></i>
+      <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">ቢሮና ተጠሪ ተቋማት</h6>
     </div>
   </div>
 </a>
 </div>
 
         <div class="col-md-4 col-sm-6 mb-3">
-          <a href="<?= rtrim($_ENV['BASE_URL'], '/') ?>/enterprise-analytics" style="text-decoration: none; color: inherit;">
+          <a href="<?= rtrim($_ENV['BASE_URL'], '/') ?>/zone-analytics" style="text-decoration: none; color: inherit;">
           <div class="report-type-card card card-outline card-success h-100 shadow-sm" style="border-radius: 12px;">
             <div class="card-body text-center py-4 d-flex flex-column align-items-center justify-content-center position-relative">
               <span class="badge badge-success float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px;">
-                <?= number_format($total_enterprse) ?> Total
+                <?= number_format($total_zonal) ?> ዞኖችና ወረዳዎች
               </span>
-              <i class="fas fa-industry fa-2x text-success mb-3 mt-2"></i>
-              <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">የኢንተርፕራይዞች ሁኔታ</h6>
+              <i class="fas fa-network-wired fa-2x text-warning mb-3 mt-2"></i>
+              <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">አስተዳደራዊ መዋቅር</h6>
             </div>
           </div>
         </div>
 
         <div class="col-md-4 col-sm-6 mb-3">
-          <a href="<?= rtrim($_ENV['BASE_URL'], '/') ?>/jcreation-analytics" style="text-decoration: none; color: inherit;">
+          <a href="<?= rtrim($_ENV['BASE_URL'], '/') ?>/vehicle-status-analytics" style="text-decoration: none; color: inherit;">
           <div class="report-type-card card card-outline card-warning h-100 shadow-sm" style="border-radius: 12px;">
             <div class="card-body text-center py-4 d-flex flex-column align-items-center justify-content-center position-relative">
               <span class="badge badge-warning float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px; color: #ffffff;">
-                <?= number_format($total_creation) ?> Total
+                <?= number_format($total_vichel) ?> Total
               </span>
-              <i class="fas fa-handshake fa-2x text-warning mb-3 mt-2"></i>
-              <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">የስራ እድል ሁኔታ</h6>
+              <i class="fas fa-car fa-2x text-primary mb-3 mt-2"></i>
+              <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">ተሽከርካሪዎቹ ያለበት ሁኔታ</h6>
             </div>
           </div>
         </div>
@@ -125,10 +86,10 @@ $role = $_SESSION['user']['role'] ?? '';
   <div class="report-type-card card card-outline card-primary h-100 shadow-sm" style="border-radius: 12px; cursor: pointer;">
     <div class="card-body text-center py-4 d-flex flex-column align-items-center justify-content-center position-relative">
       <span class="badge badge-primary float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px;">
-         <?= number_format($total_awareness) ?> Total
+         <?= number_format($total_vichel) ?> Total
       </span>
-      <i class="far fa-lightbulb fa-2x text-primary mb-3 mt-2"></i>
-      <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">የግንዛቤ ፈጠራ ሁኔታ</h6>
+      <i class="fas fa-truck fa-2x text-info mb-3 mt-2"></i>
+      <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">ተሸከርካሪዎቹ በአገልግሎት ዓይነት</h6>
     </div>
   </div>
 </a>
@@ -139,10 +100,10 @@ $role = $_SESSION['user']['role'] ?? '';
           <div class="report-type-card card card-outline card-success h-100 shadow-sm" style="border-radius: 12px;">
             <div class="card-body text-center py-4 d-flex flex-column align-items-center justify-content-center position-relative">
               <span class="badge badge-success float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px;">
-                <?= number_format($total_orgteam) ?> Total
+                <?= number_format($total_vichel) ?> Total
               </span>
-              <i class="fas fa-sitemap fa-2x text-success mb-3 mt-2"></i>
-              <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">የአደረጃጀት ሁኔታ</h6>
+              <i class="fas fa-chart-line fa-2x text-success mb-3 mt-2"></i>
+              <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">ተጨማሪ መረጃዎች</h6>
             </div>
           </div>
         </div>
@@ -152,10 +113,10 @@ $role = $_SESSION['user']['role'] ?? '';
           <div class="report-type-card card card-outline card-warning h-100 shadow-sm" style="border-radius: 12px;">
             <div class="card-body text-center py-4 d-flex flex-column align-items-center justify-content-center position-relative">
               <span class="badge badge-warning float-right position-absolute px-2 py-1" style="top: 12px; right: 12px; font-size: 11px; border-radius: 20px; color: #ffffff;">
-                <?= number_format($total_user) ?> User
+                <?= number_format($total_vichel) ?> Total
               </span>
-              <i class="fas fa-users-cog fa-2x text-warning mb-3 mt-2"></i>
-              <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">Users</h6>
+              <i class="fas fa-car-side fa-2x text-primary mb-3 mt-2"></i>
+              <h6 class="font-weight-bold mb-1" style="color: #1a365d; font-size: 15px;">ተሽከርካሪዎቹ በእድሜ</h6>
             </div>
           </div>
         </div>

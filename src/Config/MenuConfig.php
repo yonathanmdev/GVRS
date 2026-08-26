@@ -83,6 +83,30 @@ class MenuConfig
                     ],
                 ]
             ],
+               [
+                'label' => 'መረጃ ማዕከላዊ መዋቅር',
+                'icon'  => 'fas fa-edit',
+                'roles' => ['system_admin', 'admin'],
+                'children' => [
+                    [
+                        'label' => 'የመኪና ብራንድ መመዝገብ',
+                        'url'   => '/register-car-brand',
+                        'roles' => ['system_admin', 'admin'],
+                    ],
+                           [
+                        'label' => 'የመኪና አይነት መመዝገብ',
+                        'url'   => '/register-car-type',
+                        'roles' => ['system_admin', 'admin'],
+                    ],
+                    
+                    [
+                        'label' => 'የመኪና አይነት ዝርዝር',
+                        'url'   => '/car-type-list',
+                        'roles' => ['system_admin', 'admin'],
+                    ],
+                 
+                ]
+            ],
             [
                 'label' => 'ተሽከርካሪ',
                 'icon'  => 'fas fa-edit',
@@ -91,7 +115,7 @@ class MenuConfig
                     [
                         'label' => 'ተሽከርካሪ መመዝገብ',
                         'url'   => '/register-vehicle',
-                       'roles' => ['system_admin', 'officer'],
+                       'roles' => ['system_admin','mgmt', 'officer'],
                     ],
                     [
                         'label' => 'ተሽከርካሪ ዝርዝር',
@@ -99,6 +123,19 @@ class MenuConfig
                        'roles' => ['system_admin','mgmt', 'officer'],
                     ],
                     
+                ]
+            ],
+
+        [
+                'label' => 'ሪፖርት',
+                'icon'  => 'fas fa-edit',
+               'roles' => ['system_admin','mgmt', 'officer'],
+                'children' => [
+                    [
+                        'label' => 'ማየት',
+                        'url'   => '/report_view',
+                       'roles' => ['system_admin','mgmt', 'officer'],
+                    ],
                 ]
             ],
             

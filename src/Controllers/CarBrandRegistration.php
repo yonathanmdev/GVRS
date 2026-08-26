@@ -1,22 +1,24 @@
 <?php
 namespace App\Controllers;
 use App\Models\User;
-use App\Models\FunctionalOrgModel;
+use App\Models\CarModel;
 use App\Helpers\AuthHelper;
 use App\Helpers\Csrf;
 use PhpOffice\PhpSpreadsheet\Calculation\Statistical\Distributions\F;
 use Ramsey\Uuid\Uuid;
 
-class FunctionalOrgController extends BaseController
+class CarBrandRegistration extends BaseController
 {
-    public function bureauIndex()
+    
+    public function carregIndex()
     {
         AuthHelper::checkRole(['system_admin', 'admin']);
 
         $userId = $_SESSION['user']['id'] ?? null;
         $currentLang = $_SESSION['lang'] ?? 'am';
-         $level = 1;
-        $bureaus = [];
+        //$branchType = ['bureau', 'authority','commission','institution','enterprise','memriya','tsfet_bet'];
+       // $level = 1;
+      //  $bureaus = [];
 
         if (!$userId) {
             $_SESSION['error'] = \__('invalid_login');
@@ -24,26 +26,23 @@ class FunctionalOrgController extends BaseController
             exit();
         }
 
-        $model = new FunctionalOrgModel($this->db);
-$branchTypeRows = $model->getAllBranchTypes();
-$branchType     = array_column($branchTypeRows, 'type_in_eng');
+        $model = new CarModel($this->db);
+        $cars = $model->getAll();
 
-$bureaus = $model->getAll($level, $branchType);
-
-$this->render('register-bureau', [
-    'branches'      => $bureaus,
-    'currentLang'   => $currentLang,
-    'branchTypes'   => $branchTypeRows,
-    'branchTypeMap' => array_column($branchTypeRows, 'type_in_am', 'type_in_eng'),
-]);
+        $this->render('register-car-brand', [
+            'cars' => $cars,
+             'currentLang' => $currentLang
+            
+        ]);
     }
 
-    public function breauRegistration()
+
+    
+    public function carBrandRegistration()
     {
         AuthHelper::checkRole(['system_admin', 'admin']);
 
         $userId = $_SESSION['user']['id'] ?? null;
-        $organizationId = $_SESSION['user']['organization_id'] ?? null;
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -53,66 +52,44 @@ $this->render('register-bureau', [
                 header("Location: " . $_ENV['BASE_URL'] . "/login");
                 exit();
             }
-            // 1. ዳታውን መቀበል
-            $branch_name = isset($_POST['branch_name'])
-                ? trim($_POST['branch_name'])
-                : '';
 
-            $branch_type = isset($_POST['branch_type'])
-                ? trim($_POST['branch_type'])
+            // 1. ዳታውን መቀበል
+            $car_brand_name = isset($_POST['car_brand_name'])
+                ? trim($_POST['car_brand_name'])
                 : '';
 
             // 2. Validation
-            if (empty($branch_name)) {
-                $_SESSION['error'] = 'እባክዎ የቢሮውን ስም በትክክል ያስገቡ!';
-                header("Location: " . $_ENV['BASE_URL'] . "/register-bureau");
+            if (empty($car_brand_name)) {
+                $_SESSION['error'] = 'እባክዎ የመኪናዉ ብራንድ ስም በትክክል ያስገቡ!';
+                header("Location: " . $_ENV['BASE_URL'] . "/register-car-brand");
                 exit();
             }
 
-            if (empty($branch_type)) {
-                $_SESSION['error'] = 'እባክዎ የቢሮውን ዓይነት ያስገቡ!';
-                header("Location: " . $_ENV['BASE_URL'] . "/register-bureau");
-                exit();
-            }
-// Only allow valid bureau types
-    $model = new FunctionalOrgModel($this->db);
-    $allowedTypes    = array_column($model->getAllBranchTypes(), 'type_in_eng');
- 
-    if (!in_array($branch_type, $allowedTypes, true)) {
-        $_SESSION['error'] = 'የተመረጠው የቢሮ ዓይነት ትክክል አይደለም!';
-        header("Location: " . $_ENV['BASE_URL'] . "/register-bureau");
-        exit();
-    }
-
-
-            // 3. UUID ማመንጨት (ለ Organization)
+            // 3. UUID ማመንጨት
             $uuid = Uuid::uuid7()->toString();
 
             $data = [
                 'uuid' => $uuid,
-                'branch_name' => $branch_name,
-                'branch_type' => $branch_type,
-                'organization_id' => $organizationId,
+                'car_brand_name' => $car_brand_name,
                 'registered_by' => $userId
             ];
 
-                     try {
+            $model = new CarModel($this->db);
 
-                // 4. ሞዴሉን መጥራት
-                // ይህ ድርጅቱን እና Main Officeን በአንድ ላይ ይመዘግባል
-                $branchId = $model->create($data);
+            try {
+                // 4. ሞዴሉን መጥራት (የተፈጠረውን ብራንድ UUID ይመልሳል)
+                $brandUuid = $model->create($data);
 
-                if ($branchId) {
+                if ($brandUuid) {
 
-                    // Log organization creation
+                    // Log car brand creation (የኦዲት ሎግ ማስተካከያ)
                     \App\Helpers\AuditHelper::log(
-                        'bureau_created',
-                        'bureau',
-                        $branchId,
+                        'car_brand_created',
+                        'car_brand',
+                        $brandUuid,
                         null,
                         [
-                            'name' => $branch_name,
-                            'type' => $branch_type,
+                            'name' => $car_brand_name,
                             'registered_by' => $userId
                         ]
                     );
@@ -122,7 +99,7 @@ $this->render('register-bureau', [
                     header(
                         "Location: "
                         . $_ENV['BASE_URL']
-                        . "/register-bureau"
+                        . "/register-car-brand"
                     );
 
                     exit();
@@ -138,8 +115,7 @@ $this->render('register-bureau', [
                         . print_r($e->errorInfo, true)
                     );
 
-                    $_SESSION['error'] =
-                        "ይህ ድርጅት ቀደም ብሎ ተመዝግቧል!";
+                    $_SESSION['error'] = "ይህ ብራንድ ቀደም ብሎ ተመዝግቧል!";
 
                 } else {
 
@@ -148,21 +124,22 @@ $this->render('register-bureau', [
                         . $e->getMessage()
                     );
 
-                    $_SESSION['error'] =
-                        \__('operation_failed');
+                    $_SESSION['error'] = \__('operation_failed');
                 }
 
                 header(
                     "Location: "
                     . $_ENV['BASE_URL']
-                    . "/register-bureau"
+                    . "/register-car-brand"
                 );
 
                 exit();
             }
         }
     }
- public function bureauEdit()
+
+    
+ public function carBrandEdit()
 {
     AuthHelper::checkRole(['system_admin', 'admin']);
 
@@ -205,20 +182,18 @@ $this->render('register-bureau', [
         ? trim($_POST['id'])
         : '';
 
-    $name = isset($_POST['branch_name'])
-        ? trim($_POST['branch_name'])
+    $name = isset($_POST['car_car_name'])
+        ? trim($_POST['car_car_name'])
         : '';
 
-    $branchType = isset($_POST['branch_type'])
-        ? trim($_POST['branch_type'])
-        : '';
+    
 
     if (empty($uuid)) {
         http_response_code(400);
 
         echo json_encode([
             'status' => 'error',
-            'message' => 'የቢሮው መለያ አልተገኘም።'
+            'message' => 'የመኪናዉ መለያ አልተገኘም።'
         ]);
 
         exit();
@@ -229,85 +204,53 @@ $this->render('register-bureau', [
 
         echo json_encode([
             'status' => 'error',
-            'message' => 'እባክዎ የቢሮውን ስም ያስገቡ።'
+            'message' => 'እባክዎ የመኪናዉ ስም ያስገቡ።'
         ]);
 
         exit();
     }
 
-    if (empty($branchType)) {
-        http_response_code(400);
+     
 
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'እባክዎ የቢሮውን ዓይነት ይምረጡ።'
-        ]);
-
-        exit();
-    }
-
-    $model = new FunctionalOrgModel($this->db);
-    $allowedTypes    = array_column($model->getAllBranchTypes(), 'type_in_eng');
- 
-    if (!in_array($branchType, $allowedTypes, true)) {
-        http_response_code(400);
-
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'የቢሮው ዓይነት ትክክል አይደለም።'
-        ]);
-
-        exit();
-    }
+   
 
     $data = [
         'uuid'        => $uuid,
         'name'        => $name,
-        'branch_type' => $branchType,
+         
         'updated_by'  => $userId
     ];
 
+    $model = new CarModel($this->db);
+
    try {
-    $updated = $model->updateBureau($data);
+    $updated = $model->updatecar($data);
 
     if ($updated['status'] === 'success') {
 
         \App\Helpers\AuditHelper::log(
-            action:     'bureau_updated',
-            entityType: 'bureau',
+            action:     'car_brand_updated',
+            entityType: 'car_brand',
             entityId:   $updated['id'],
             oldValues:  null,
             newValues:  [
                 'name'       => $name,
-                'type'       => $branchType,
+                 
                 'updated_by' => $userId,
             ]
         );
 
         echo json_encode([
             'status'  => 'success',
-            'message' => 'የቢሮው መረጃ በትክክል ተስተካክሏል።'
+            'message' => 'የመኪናዉ መረጃ በትክክል ተስተካክሏል።'
         ]);
         exit();
     }
 
     // Distinguish "not found" from "blocked by incompatible children"
-    if (!empty($updated['incompatible_child_types'])) {
-        http_response_code(409); // conflict — more accurate than 404 here
-        echo json_encode([
-            'status'  => 'error',
-            'message' => $updated['message'],
-            'incompatible_child_types' => $updated['incompatible_child_types'],
-        ]);
-        exit();
-    }
+   
 
-    http_response_code(404);
-    echo json_encode([
-        'status'  => 'error',
-        'message' => 'የቢሮው አስተዳደሩ መረጃ አልተገኘም።'
-    ]);
-    exit();
+ 
 
 } catch (\Exception $e) {
     error_log("Update Error: " . $e->getMessage());
@@ -322,7 +265,7 @@ $this->render('register-bureau', [
 
 
 
-
+/*
 public function accountableOfficeIndex()
     {
         AuthHelper::checkRole(['system_admin', 'admin']);
@@ -331,6 +274,7 @@ $userId = $_SESSION['user']['id'] ?? null;
 $currentLang = $_SESSION['lang'] ?? 'am';
 $offices = [];
 $bureaus = [];
+$bureaus_types = ['bureau', 'authority', 'enterprise', 'institution', 'commission'];
 $bureauLevel = 1;
 $officeLevel = 2; // accountable offices sit one level below their bureau
 
@@ -341,9 +285,6 @@ if (!$userId) {
 }
 
 $bureausmodel = new FunctionalOrgModel($this->db);
-$branchTypeRows = $bureausmodel->getAllBranchTypes();
-$bureaus_types     = array_column($branchTypeRows, 'type_in_eng');
-
 $bureaus = $bureausmodel->getAll($bureauLevel, $bureaus_types);
 
 // Pagination for the woreda listing table
@@ -369,9 +310,6 @@ $offices = $bureausmodel->getaccountableOfficesWithBureau($officeLevel, null, $s
             'currentPage' => $currentPage,
             'totalPages'  => $totalPages,
             'search'      => $search,
-             'branchTypes'   => $branchTypeRows,    
-             'branchTypeMap' => array_column($branchTypeRows, 'type_in_am', 'type_in_eng'),
-
         ]);
     }
 
@@ -423,18 +361,13 @@ if (empty($parent)) {
 
 $model = new FunctionalOrgModel($this->db); // or whichever model has findById()
 $parentBranch = $model->findById($parent);
- $allowedTypes    = array_column($model->getAllBranchTypes(), 'type_in_eng');
- 
-    if (!in_array($branch_type, $allowedTypes, true)) {
-        http_response_code(400);
 
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'የቢሮው ዓይነት ትክክል አይደለም።'
-        ]);
 
-        exit();
-    }
+// 1. Validate the zone/region selection itself
+if (!in_array($parentBranch['branch_type'], ['bureau', 'authority', 'enterprise', 'institution', 'commission'], true)) {
+    echo json_encode(['status' => 'error', 'message' => 'የተመረጠው ዞን ወይም ከተማ አስተዳደር አይደለም።']);
+    return;
+}   
 
 
 
@@ -572,21 +505,10 @@ if (empty($parent)) {
 
 $model = new FunctionalOrgModel($this->db); // or whichever model has findById()
 $parentBranch = $model->findById($parent);
-$allowedTypes    = array_column($model->getAllBranchTypes(), 'type_in_eng');
- 
-    if (!in_array($branch_type, $allowedTypes, true)) {
-        http_response_code(400);
 
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'የቢሮው ዓይነት ትክክል አይደለም።'
-        ]);
-
-        exit();
-    }
 
 // 1. Validate the zone/region selection itself
-if (!in_array($parentBranch['branch_type'], $allowedTypes, true)) {
+if (!in_array($parentBranch['branch_type'], ['bureau', 'authority','commission','institution','enterprise'], true)) {
     echo json_encode(['status' => 'error', 'message' => 'የተመረጠው እናት መ/ቤት አይደለም።']);
     return;
 }
@@ -669,19 +591,19 @@ if (!in_array($parentBranch['branch_type'], $allowedTypes, true)) {
         }
     }
 
+*/
 
-
-public function delete(): void
+public function deleteCarBrand(): void
 {
     AuthHelper::checkRole(['system_admin', 'admin']);
     header('Content-Type: application/json');
 
     $data   = json_decode(file_get_contents('php://input'), true);
     $id     = (string) ($data['id']   ?? '');
-    $type   = (string) ($data['type'] ?? '');
+ 
     $userId = $_SESSION['user']['id'] ?? '';
     $userRole = $_SESSION['user']['role'] ?? '';
-    $organizationId = $_SESSION['user']['organization_id'] ?? null;
+     
 
     $reason   = trim($data['reason'] ?? '');
     $source   = 'INDIVIDUAL';
@@ -702,16 +624,9 @@ public function delete(): void
     }
 
    // 2. Authorization: system_admin (any org), OR admin scoped to their own organization
-$isSystemAdmin = $userRole === 'system_admin';
-$isOrgAdmin    = $userRole === 'admin' && !empty($organizationId);
+ 
 
-if (!$isSystemAdmin && !$isOrgAdmin) {
-    echo json_encode([
-        'status'  => 'error',
-        'message' => 'ያልተፈቀደ ድርጊት።'
-    ]);
-    return;
-}
+ 
     // 3. Verify password
     $userModel = new User($this->db);
     if (!$userModel->verifyPassword($userId, $password)) {
@@ -723,9 +638,9 @@ if (!$isSystemAdmin && !$isOrgAdmin) {
     }
 
     try {
-        $model   = new FunctionalOrgModel($this->db);
-        $action  = 'branch_deleted';
-        $metaKey = 'affected_branches';
+        $model   = new carModel($this->db);
+        $action  = 'car_deleted';
+        $metaKey = 'affected_cars';
 
         $result = $model->softDelete($id, $userId, $reason, $source);
 
@@ -736,10 +651,10 @@ if (!$isSystemAdmin && !$isOrgAdmin) {
 
         \App\Helpers\AuditHelper::log(
             action:     $action,
-            entityType: $type ?: 'branches',
+            entityType: 'car_brand',
             entityId:   $result['id'],
             oldValues:  $oldRecord,
-            newValues:  ['status' => 'inactive'],
+            newValues:  ['status' => 'deleted value to 1 '],
             metadata:   [
                 $metaKey          => $branchCount,
                 'affected_users'  => $userCount,
@@ -756,8 +671,179 @@ if (!$isSystemAdmin && !$isOrgAdmin) {
     } catch (\InvalidArgumentException $e) {
         echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
     } catch (\Exception $e) {
-        error_log("Delete Error ({$type}): " . $e->getMessage());
+        error_log("Delete Error (car_brand): " . $e->getMessage());
         echo json_encode(['status' => 'error', 'message' => 'ስህተት ተፈጥሯል፤ እባክዎ በድጋሚ ይሞክሩ።']);
     }
+}
+
+ 
+public function index()
+{
+    $carTypeModel = new carModel($this->db);
+
+    // 1. ለሰንጠረዡ (Table) የተመዘገቡ የመኪና/ማሽን አይነቶች መረጃ ማምጣት
+    $cars         = $carTypeModel->getRegisteredCarTypes();
+
+    // 2. ለ Pop-up Modal Dropdowns የሚያስፈልጉ መረጃዎች
+    $brands       = $carTypeModel->getActiveBrands();
+    $typeLists    = $carTypeModel->getCarTypeLists();
+    $serviceTypes = $carTypeModel->getCarServices();
+
+    $currentLang  = $_SESSION['lang'] ?? 'am';
+
+    // 3. ሁሉንም አስፈላጊ Variables ወደ View ማስተላለፍ
+    $this->render('register-car-type', [
+        'cars'         => $cars,
+        'brands'       => $brands,
+        'typeLists'    => $typeLists,
+        'serviceTypes' => $serviceTypes,
+        'currentLang'  => $currentLang
+    ]);
+}
+    
+
+    /**
+     * የመዝገባ ሂደቱን ማስተናገጃ Method
+     */
+    public function store()
+{
+    $carTypeModel = new carModel($this->db);
+
+    // 1. Request Method ማረጋገጥ
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        header('Location: ' . ($_ENV['BASE_URL'] ?? '/') . '/car-types');
+        exit;
+    }
+
+    // 2. CSRF Token ማረጋገጥ
+    $token = $_POST['csrf_token'] ?? $_POST['_token'] ?? '';
+   /*  if (!\App\Helpers\Csrf::verify($token)) {
+        $_SESSION['error'] = 'Invalid CSRF token!';
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $_ENV['BASE_URL']));
+        exit;
+    } */
+
+    // 3. የተጠቃሚው Session መኖሩን ማረጋገጥ
+    if (!isset($_SESSION['user']['id'])) {
+        $_SESSION['error'] = 'እባክዎ መጀመሪያ ወደ ሲስተሙ ይግቡ።';
+        header('Location: ' . ($_ENV['BASE_URL'] ?? '/') . '/login');
+        exit;
+    }
+
+    // 4. Inputs Sanitization & Validation
+    $brandId     = filter_input(INPUT_POST, 'brand_id', FILTER_VALIDATE_INT);
+    $typeName    = filter_input(INPUT_POST, 'type_name', FILTER_VALIDATE_INT);
+    $serviceType = filter_input(INPUT_POST, 'service_type', FILTER_VALIDATE_INT);
+    $measurement = trim($_POST['measurement'] ?? '');
+    $catagory    = trim($_POST['catagory'] ?? '');
+
+    // ENUM Values Validation
+    $allowedMeasurements = ['በሰው', 'በሊትር', 'በፈረስ ጉልበት', 'በኩንታል'];
+    $allowedCategories   = ['vehicle', 'machine'];
+
+    if (
+        !$brandId || 
+        !$typeName || 
+        !$serviceType || 
+        !in_array($measurement, $allowedMeasurements, true) || 
+        !in_array($catagory, $allowedCategories, true)
+    ) {
+        $_SESSION['error'] = 'እባክዎ ሁሉንም አስፈላጊ መረጃዎች በትክክል ይሙሉ!';
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $_ENV['BASE_URL']));
+        exit;
+    }
+
+    try {
+        $registeredBy = (int) $_SESSION['user']['id'];
+
+        // --- 5. Duplication Check (መረጃው ቀድሞ መኖሩን ማረጋገጥ) ---
+        if ($carTypeModel->isDuplicate($brandId, $typeName, $serviceType, $measurement, $catagory)) {
+            $_SESSION['error'] = 'ይህ የመኪና/ማሽን አይነት ቀደም ሲል የተመዘገበ ስለሆነ ድጋሚ መመዝገብ አይቻልም!';
+            header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $_ENV['BASE_URL']));
+            exit;
+        }
+
+        // መረጃውን መመዝገብ
+        $isSaved = $carTypeModel->createcartype([
+            'brand_id'     => $brandId,
+            'type_name'    => $typeName,
+            'service_type' => $serviceType,
+            'measurement'  => $measurement,
+            'catagory'     => $catagory,
+            'registerd_by' => $registeredBy
+        ]);
+
+        if ($isSaved) {
+            $_SESSION['success'] = 'የመኪና/ማሽን አይነቱ በተሳካ ሁኔታ ተመዝግቧል!';
+        } else {
+            $_SESSION['error'] = 'መረጃውን መመዝገብ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
+        }
+
+    } catch (\PDOException $e) {
+        error_log('CarType Registration Error: ' . $e->getMessage());
+        $_SESSION['error'] = 'የሲስተም ስህተት አጋጥሟል። እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።';
+    }
+
+    header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $_ENV['BASE_URL']));
+    exit;
+}
+
+// Update Process
+public function updateProcess()
+{
+    \App\Helpers\Csrf::verify();
+
+    $uuid        = filter_input(INPUT_POST, 'uuid', FILTER_SANITIZE_SPECIAL_CHARS);
+    $brandId     = filter_input(INPUT_POST, 'brand_id', FILTER_VALIDATE_INT);
+    $typeName    = filter_input(INPUT_POST, 'type_name', FILTER_VALIDATE_INT);
+    $serviceType = filter_input(INPUT_POST, 'service_type', FILTER_VALIDATE_INT);
+    $measurement = filter_input(INPUT_POST, 'measurement', FILTER_SANITIZE_SPECIAL_CHARS);
+    $catagory    = filter_input(INPUT_POST, 'catagory', FILTER_SANITIZE_SPECIAL_CHARS);
+    $userId      = $_SESSION['user']['id'] ?? 0;
+
+    if ($uuid && $brandId && $typeName && $serviceType && $measurement && $catagory) {
+        $carModel = new carModel($this->db);
+        $updated  = $carModel->updateCarType([
+            'uuid'         => $uuid,
+            'brand_id'     => $brandId,
+            'type_name'    => $typeName,
+            'service_type' => $serviceType,
+            'measurement'  => $measurement,
+            'catagory'     => $catagory,
+            'updated_by'   => $userId
+        ]);
+
+        if ($updated) {
+            $_SESSION['success'] = "መረጃው በትክክል ተስተካክሏል!";
+        } else {
+            $_SESSION['error'] = "መረጃውን ማስተካከል አልተቻለም።";
+        }
+    }
+
+    header('Location: ' . rtrim($_ENV['BASE_URL'] ?? '', '/') . '/register-car-type');
+    exit;
+}
+
+// Soft Delete Process
+public function deleteProcess()
+{
+    \App\Helpers\Csrf::verify();
+
+    $uuid   = filter_input(INPUT_POST, 'uuid', FILTER_SANITIZE_SPECIAL_CHARS);
+    $userId = $_SESSION['user']['id'] ?? 0;
+
+    if ($uuid) {
+        $carModel = new carModel($this->db);
+        $deleted  = $carModel->deleteCarType($uuid, $userId);
+
+        if ($deleted) {
+            $_SESSION['success'] = "መረጃው በትክክል ተሰርዟል!";
+        } else {
+            $_SESSION['error'] = "መረጃውን መሰረዝ አልተቻለም።";
+        }
+    }
+
+    header('Location: ' . rtrim($_ENV['BASE_URL'] ?? '', '/') . '/register-car-type');
+    exit;
 }
 }

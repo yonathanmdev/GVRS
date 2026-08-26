@@ -189,13 +189,12 @@ $is_accountable_page = true; ?>
               <option value="" disabled selected>
                 ይምረጡ
               </option>
-              <option value="authority">ባለ ስልጣን</option>
-              <option value="commission">ኮሚሽን</option>
-              <option value="institution">ኢንስቲቲዩት</option>
-              <option value="enterprise">ኢንተርፕራይዝ</option>
-              <option value="memriya">መምሪያ</option>
-              <option value="tsfet_bet">ጽፈት ቤት</option>
-               <option value="college">ኮሌጅ</option>
+               <?php foreach ($branchTypes as $type): ?>
+    <?php if ($type['type_in_eng'] === 'bureau') continue; ?>
+    <option value="<?= ViewHelper::e($type['type_in_eng']) ?>">
+        <?= ViewHelper::e($type['type_in_am']) ?>
+    </option>
+<?php endforeach; ?>
 
             </select>
 

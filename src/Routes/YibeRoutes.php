@@ -2,7 +2,17 @@
 // src/Routes/YibeRoutes.php
 
 return [
-//የሶስቱንም አፈጻጸም የሚያወጣው 
+    // የዳሽቦርድ ገጽ ራውት
+    'dashboard' => ['DashboardController', 'dashboard', true],
+    'report_view' => ['DashboardController', 'reportView', true],
+    'report1_view' => ['DashboardController', 'report1controller', true],
+    'report2_view' => ['DashboardController', 'report2controller', true],
+    'bureau-analytics' => ['DashboardController', 'bureausGraphView', true],
+    'zone-analytics' => ['DashboardController', 'zoneAnalyticsView', true],
+    'vehicle-status-analytics' => ['DashboardController', 'vehicleStatusView', true],
+
+
+/*የሶስቱንም አፈጻጸም የሚያወጣው 
 'efficiency_statusy' => ['ReportgenerationController', 'efficiencyStatusReport', true],
 // የባለሙያን አፈጻጸም ሁኔታ ማሳያ
     'expert_level_view' => ['ReportgenerationController', 'expertLevelReport', true],
@@ -42,6 +52,6 @@ return [
 
     // የኢንተርፐራይዝ ሁኔታ ሲነካ የሚከፈተው የቻርት ገጽ ራውት
     'enterprise-analytics' => ['ReportgenerationController', 'enterpriseAnalyticsShow', true],
-
+*/
 
 ];

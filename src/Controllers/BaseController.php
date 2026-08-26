@@ -71,4 +71,5 @@ protected function renderwithoutlogin($viewName, $data = []) {
         die("ስህተት: የህትመት ቪው ፋይል አልተገኘም: " . $viewPath);
     }
 }
+
 }

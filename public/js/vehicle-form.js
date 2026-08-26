@@ -180,6 +180,21 @@
     // woreda: zone -> woreda list
     wireCascade(document.getElementById('woreda_zone_select'));
 
+    // Mirror the selected zone into the hidden zone_id field once a
+    // woreda is chosen, same as department does for memriya_zone_select.
+    // wireCascade() already sets branch_id via activateFields() on this
+    // same 'change' event — this listener just adds zone_id alongside it.
+    const woredaZoneSelect = document.getElementById('woreda_zone_select');
+    const woredaSelect     = document.getElementById('woreda_select');
+
+    woredaSelect.addEventListener('change', function () {
+        if (this.value) {
+            zoneIdInput.value = woredaZoneSelect.value;
+        } else {
+            zoneIdInput.value = '';
+        }
+    });
+
     // department: memriya IS the office (sets branch_id directly), zone is a
     // second, separately required field that also gets stored as zone_id.
     // Both must be picked before fields activate.

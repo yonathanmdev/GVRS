@@ -1,7 +1,7 @@
 <?php
 namespace App\Models;
 use PDO;
-class FunctionalOrgModel {
+class CarModel {
     private $db;
     public function __construct($db) {
         $this->db = $db;
@@ -13,86 +13,44 @@ class FunctionalOrgModel {
      * admin_parent_id is NULL because this row itself is NOT an administrative unit —
      * organization_id already tells us where it physically sits.
      */
-    public function create(array $data): string
-    {
-        $sql = "INSERT INTO branches (
-                    uuid,
-                    organization_id,
-                    admin_parent_id,
-                    name,
-                    branch_type,
-                    level,
-                    admin_path,
-                    functional_parent_id,
-                    functional_path,
-                    registered_by,
-                    is_active
-                ) VALUES (
-                    :uuid,
-                    :organization_id,
-                    NULL,
-                    :name,
-                    :branch_type,
-                    1,
-                    NULL,
-                    NULL,
-                    NULL,
-                    :registered_by,
-                    1
-                )";
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            'uuid'             => $data['uuid'],
-            'organization_id'  => $data['organization_id'],
-            'name'             => $data['branch_name'],
-            'branch_type'      => $data['branch_type'],
-            'registered_by'    => $data['registered_by'],
-        ]);
-
-        $internalId = (int) $this->db->lastInsertId();
-
-      // functional_path is self-referencing for a root node: /{internal_id}/
-// This lets child rows later build their path as "{parent.functional_path}{child_internal_id}/"
-$functionalPath = '/' . $internalId . '/';
-
-$updateSql = "UPDATE branches SET functional_path = :functional_path WHERE id = :id";
-$updateStmt = $this->db->prepare($updateSql);
-$updateStmt->execute([
-    'functional_path' => $functionalPath,
-    'id'               => $internalId,
-]);
-
-        return $internalId;
-    }
-
-public function getAll(int $level, $branchType = null): array
+   public function create(array $data): string
 {
-    $sql = "SELECT id, uuid, admin_parent_id, name, branch_type, level, 
-                   admin_path, functional_parent_id, functional_path, registered_by
-            FROM branches
-            WHERE level = :level AND is_active <> 3";
+    $sql = "INSERT INTO brand (
+                uud,
+                brand_name,
+                registered_by 
+            ) VALUES (
+                :uuid,
+                :car_brand_name,
+                :registered_by
+            )";
 
-    $params = [':level' => $level];
+    $stmt = $this->db->prepare($sql);
+    
+    $success = $stmt->execute([
+        'uuid'           => $data['uuid'],
+        'car_brand_name' => $data['car_brand_name'],
+        'registered_by'  => $data['registered_by'],
+    ]);
 
-    if ($branchType !== null) {
-        if (is_array($branchType)) {
-            // e.g. ['bureau', 'baleseltan'] for a grouped menu view
-            $placeholders = [];
-            foreach ($branchType as $i => $type) {
-                $key = ":type{$i}";
-                $placeholders[] = $key;
-                $params[$key] = $type;
-            }
-            $sql .= " AND branch_type IN (" . implode(',', $placeholders) . ")";
-        } else {
-            // single type, e.g. 'woreda'
-            $sql .= " AND branch_type = :branch_type";
-            $params[':branch_type'] = $branchType;
-        }
+    // ክዋኔው የተሳካ ከሆነ የገባውን UUID ይመልሳል
+    if ($success) {
+        return $data['uuid'];
     }
 
-    $sql .= " ORDER BY name ASC";
+    throw new \Exception("የብራንድ መረጃውን ማስቀመጥ አልተቻለም።");
+}
+
+public function getAll(): array
+{
+    $sql = "SELECT uud, brand_name  FROM brand
+            WHERE  is_deleted = 0";
+
+    $params = [];
+
+ 
+
+    $sql .= " ORDER BY brand_name ASC";
 
     $stmt = $this->db->prepare($sql);
     $stmt->execute($params);
@@ -101,51 +59,50 @@ public function getAll(int $level, $branchType = null): array
 }
 public function findById(string $id): ?array
 {
-    $findSql = "SELECT id, name, functional_path, admin_path, branch_type, is_active
-                FROM branches WHERE uuid = :uuid AND is_active <> 3";
+    $findSql = "SELECT uud, brand_name FROM brand WHERE uud = :uuid AND is_deleted = 0";
     $findStmt = $this->db->prepare($findSql);
     $findStmt->execute(['uuid' => $id]);
-    $branch = $findStmt->fetch(\PDO::FETCH_ASSOC);
+    $brand = $findStmt->fetch(\PDO::FETCH_ASSOC);
 
-    if (!$branch) {
+    if (!$brand) {
         return null;
     }
 
-    return $branch;
+    return $brand;
 }
-public function updateBureau(array $data): array
+public function updatecar(array $data): array
 {
     // 1. Fetch the current row BEFORE updating
-    $findSql = "SELECT id, branch_type FROM branches WHERE uuid = :uuid AND is_active <> 3";
+    $findSql = "SELECT uud, brand_name FROM brand WHERE uud = :uuid AND is_deleted =0";
     $findStmt = $this->db->prepare($findSql);
     $findStmt->execute(['uuid' => $data['uuid']]);
     $existing = $findStmt->fetch(\PDO::FETCH_ASSOC);
 
     if (!$existing) {
-        return ['status' => 'error', 'message' => 'Branch not found.'];
+        return ['status' => 'error', 'message' => 'car not found.'];
     }
-    $branchId = (int) $existing['id'];
 
-    $updateSql = "UPDATE branches
-                  SET name = :name,
-                      branch_type = :branch_type,
+     
+    $brand_name =  $existing['brand_name'];
+
+    $updateSql = "UPDATE brand
+                  SET brand_name = :name,
                       updated_by = :updated_by
-                  WHERE uuid = :uuid
-                    AND is_active <> 3";
+                  WHERE uud = :uuid
+                    AND is_deleted = 0";
 
     $stmt = $this->db->prepare($updateSql);
     $stmt->execute([
         'name'        => $data['name'],
-        'branch_type' => $data['branch_type'],
         'updated_by'  => $data['updated_by'],
         'uuid'        => $data['uuid'],
     ]);
 
     if ($stmt->rowCount() === 0) {
-        return ['status' => 'error', 'message' => 'Update failed or branch type not eligible for this operation.'];
+        return ['status' => 'error', 'message' => 'Update failed .'];
     }
 
-    return ['status' => 'success', 'id' => $branchId];
+    return ['status' => 'success', 'id' => $brand_name];
 }
 public function createAccountableOffices(array $data): int
 {
@@ -158,6 +115,7 @@ public function createAccountableOffices(array $data): int
             FROM branches
             WHERE id = :parent_id
               AND is_active <> 3
+              AND branch_type IN ('bureau', 'authority','commission','institution','enterprise','memriya','tsfet_bet')
             LIMIT 1
         ";
 
@@ -256,31 +214,17 @@ public function createAccountableOffices(array $data): int
 }
 public function getaccountableOfficesWithBureau(int $level, ?int $bureau_id = null, ?string $search = null, int $limit = 20, int $offset = 0): array
 {
-    // Pull allowed types from branch_type, excluding 'bureau' —
-    // same eligible set used by countOfficesWithBureau(), so
-    // the count and the list always agree.
-    $allTypes = array_column($this->getAllBranchTypes(), 'type_in_eng');
-    $allowedTypes = array_values(array_diff($allTypes, ['bureau']));
-
-    $typePlaceholders = [];
-    $params = [];
-
-    foreach ($allowedTypes as $i => $type) {
-        $key = "type_{$i}";
-        $typePlaceholders[] = ":{$key}";
-        $params[$key] = $type;
-    }
-
-    $inClause = implode(', ', $typePlaceholders);
-
     $sql = "SELECT 
                 aco.id, aco.uuid, aco.name AS office_name, aco.branch_type, aco.level,
                 aco.functional_path, aco.organization_id, aco.is_active,
                 b.id AS bureau_id, b.uuid AS bureau_uuid, b.name AS bureau_name, b.branch_type AS bureau_type
             FROM branches aco
             JOIN branches b ON b.id = aco.functional_parent_id
-            WHERE aco.level = :level
-              AND aco.branch_type IN ({$inClause})";
+            WHERE aco.branch_type IN ('authority','commission','institution','enterprise','memriya','tsfet_bet','college')
+            AND aco.is_active <> 3
+            AND aco.level = :level";
+
+    $params = [];
 
     if ($bureau_id !== null) {
         $sql .= " AND aco.functional_parent_id = :bureau_id";
@@ -304,29 +248,16 @@ public function getaccountableOfficesWithBureau(int $level, ?int $bureau_id = nu
 
     return $stmt->fetchAll(\PDO::FETCH_ASSOC);
 }
+
 public function countOfficesWithBureau(int $level, ?string $bureau_id = null, ?string $search = null): int
 {
-    // Pull allowed types from branch_type, excluding 'bureau' —
-    // this count is specifically for non-bureau offices under a bureau.
-    $allTypes = array_column($this->getAllBranchTypes(), 'type_in_eng');
-    $allowedTypes = array_values(array_diff($allTypes, ['bureau']));
-
-    $placeholders = [];
-    $params = ['level' => $level];
-
-    foreach ($allowedTypes as $i => $type) {
-        $key = "type_{$i}";
-        $placeholders[] = ":{$key}";
-        $params[$key] = $type;
-    }
-
-    $inClause = implode(', ', $placeholders);
-
     $sql = "SELECT COUNT(*) FROM branches w
             JOIN branches z ON z.id = w.functional_parent_id
-            WHERE w.branch_type IN ({$inClause})
+            WHERE w.branch_type IN ('college', 'authority','commission','institution','enterprise','memriya','tsfet_bet')
             AND w.is_active <> 3
             AND w.level = :level";
+
+    $params = ['level' => $level];
 
     if ($bureau_id !== null) {
         $sql .= " AND w.functional_parent_id = :bureau_id";
@@ -343,7 +274,6 @@ public function countOfficesWithBureau(int $level, ?string $bureau_id = null, ?s
     return (int) $stmt->fetchColumn();
 }
 
-
 public function updateAccountableOffice(array $data): ?int
 {
     try {
@@ -356,6 +286,8 @@ public function updateAccountableOffice(array $data): ?int
             FROM branches
             WHERE uuid = :uuid
               AND is_active <> 3
+              AND branch_type IN ('college', 'authority','commission','institution','enterprise','memriya','tsfet_bet' 
+              )
             LIMIT 1
         ";
 
@@ -381,6 +313,7 @@ public function updateAccountableOffice(array $data): ?int
             FROM branches
             WHERE id = :parent_id
               AND is_active <> 3
+              AND branch_type IN ('bureau', 'authority', 'enterprise', 'institution', 'commission')
             LIMIT 1
         ";
 
@@ -445,96 +378,38 @@ public function updateAccountableOffice(array $data): ?int
     }
 }
 
-public function getAllAccountableOfficesforSelectedBureau(int $level, ?int $bureau_id = null): array
-{
-    $allTypes = array_column($this->getAllBranchTypes(), 'type_in_eng');
-    $allowedTypes = array_values(array_diff($allTypes, ['memriya']));
-
-    $typePlaceholders = [];
-    $params = [];
-
-    foreach ($allowedTypes as $i => $type) {
-        $key = "type_{$i}";
-        $typePlaceholders[] = ":{$key}";
-        $params[$key] = $type;
-    }
-
-    $inClause = implode(', ', $typePlaceholders);
-
-    $sql = "SELECT 
-                aco.id, aco.uuid, aco.name AS office_name, aco.branch_type, aco.level,
-                aco.functional_path, aco.organization_id, aco.is_active,
-                b.id AS bureau_id, b.uuid AS bureau_uuid, b.name AS bureau_name, b.branch_type AS bureau_type
-            FROM branches aco
-            JOIN branches b ON b.id = aco.functional_parent_id
-            WHERE aco.level = :level
-              AND aco.branch_type IN ({$inClause})";
-
-    if ($bureau_id !== null) {
-        $sql .= " AND aco.functional_parent_id = :bureau_id";
-        $params['bureau_id'] = $bureau_id;
-    }
-
-    $sql .= " ORDER BY b.name ASC, aco.name ASC";
-
-    $stmt = $this->db->prepare($sql);
-    $stmt->bindValue('level', $level, \PDO::PARAM_INT);
-    foreach ($params as $key => $val) {
-        $stmt->bindValue($key, $val);
-    }
-    $stmt->execute();
-
-    return $stmt->fetchAll(\PDO::FETCH_ASSOC);
-}
-public function getAllBranchTypes(): array
-{
-    $sql = "SELECT id, type_in_eng, type_in_am
-            FROM branch_type
-            ORDER BY id ASC";
-
-    $stmt = $this->db->prepare($sql);
-    $stmt->execute();
-
-    return $stmt->fetchAll(\PDO::FETCH_ASSOC);
-}
  public function softDelete(string $id, string $userId, string $reason, string $source): array
 {
-    // 1. Find the branch first
-    $findSql = "SELECT id, functional_path, admin_path, branch_type, is_active
-                FROM branches WHERE uuid = :uuid";
+    // 1. Find the brand first
+    $findSql = "SELECT uud, brand_name, registered_by, created_at,is_deleted FROM brand WHERE uud = :uuid";
     $findStmt = $this->db->prepare($findSql);
     $findStmt->execute(['uuid' => $id]);
-    $branch = $findStmt->fetch(\PDO::FETCH_ASSOC);
+    $brand = $findStmt->fetch(\PDO::FETCH_ASSOC);
 
-    if (!$branch) {
-        throw new \InvalidArgumentException("Branch not found: {$id}");
+    if (!$brand) {
+        throw new \InvalidArgumentException("car brand not found: {$id}");
     }
 
-    if ((int) $branch['is_active'] === 3) {
-        throw new \InvalidArgumentException("{$branch['branch_type']} is already deleted: {$id}");
+    if ((int) $brand['is_deleted'] === 1) {
+        throw new \InvalidArgumentException("{$brand['brand_name']} is already deleted: {$id}");
     }
 
     // 2. Pick the correct path column based on branch_type
-    $adminTypes = ['regio', 'zone', 'ketema_woreda', 'woreda',  'kifle_ketema'];
-    $pathColumn = in_array($branch['branch_type'], $adminTypes, true) ? 'admin_path' : 'functional_path';
-    $path = $branch[$pathColumn];
-
-    if (empty($path)) {
-        throw new \RuntimeException("Branch {$id} has no {$pathColumn} set — cannot cascade delete.");
-    }
+     
 
     $this->db->beginTransaction();
 
     try {
         // 3a. Soft delete the SELECTED branch with the individual, user-supplied reason/source
-        $selfSql = "UPDATE branches 
-                     SET is_active = 3, 
-                         deleted_by = :deleted_by, 
+        $selfSql = "UPDATE brand 
+                     SET is_deleted = 1, 
+                         deletedby = :deleted_by, 
+                         deleteddate = NOW(),
                          deletion_source = :deletion_source, 
-                         deletion_reason = :deletion_reason,
-                         deleted_at = NOW()
-                     WHERE uuid = :uuid
-                     AND is_active <> 3";
+                         deletion_reason = :deletion_reason
+                         
+                     WHERE uud = :uuid
+                     AND is_deleted = 0";
         $selfStmt = $this->db->prepare($selfSql);
         $selfStmt->execute([
             'deleted_by'      => $userId,
@@ -542,57 +417,191 @@ public function getAllBranchTypes(): array
             'deletion_reason' => $reason,
             'uuid'            => $id,
         ]);
+
         $branchDeletedCount = $selfStmt->rowCount();
 
         // 3b. Soft delete all DESCENDANTS with a forced CASCADE source
-        $cascadeSql = "UPDATE branches 
-                        SET is_active = 3, 
-                            deleted_by = :deleted_by, 
-                            deletion_source = 'CASCADE', 
-                            deletion_reason = :deletion_reason,
-                            deleted_at = NOW()
-                        WHERE {$pathColumn} LIKE :path_prefix
-                        AND uuid <> :uuid
-                        AND is_active <> 3";
-        $cascadeStmt = $this->db->prepare($cascadeSql);
-        $cascadeStmt->execute([
-            'deleted_by'      => $userId,
-            'deletion_reason' => "Cascaded from parent branch deletion (uuid: {$id})",
-            'path_prefix'     => $path . '%',
-            'uuid'            => $id,
-        ]);
-        $cascadedCount = $cascadeStmt->rowCount();
-
-        $totalBranchCount = $branchDeletedCount + $cascadedCount;
-
-        // 3c. Soft delete users assigned to this branch and its descendants (if applicable)
-        $userSql = "UPDATE users 
-                     SET is_active = 3, deleted_at = NOW()
-                     WHERE branch_id IN (
-                         SELECT id FROM branches 
-                         WHERE uuid = :uuid OR {$pathColumn} LIKE :path_prefix
-                     )
-                     AND is_active <> 3";
-        $userStmt = $this->db->prepare($userSql);
-        $userStmt->execute([
-            'uuid'        => $id,
-            'path_prefix' => $path . '%',
-        ]);
-        $userCount = $userStmt->rowCount();
-
+        
+        
         $this->db->commit();
 
         return [
             'status'      => 'success',
-            'oldRecord'   => $branch,
-            'branchCount' => $totalBranchCount,
-            'userCount'   => $userCount,
-            'id'    => $branch['id'],
+            'oldRecord'   => $brand,
+            
+            'id'    => $brand['uud'],
         ];
 
     } catch (\Throwable $e) {
         $this->db->rollBack();
         throw $e;
+    }
+}
+/**
+     * አዲስ Car Type መዝግብ
+     */
+    public function createcartype(array $data): bool
+    {
+        
+        $sql = "INSERT INTO `car_type` (
+                   
+                    `brand_id`, 
+                    `type_name`, 
+                    `service_type`, 
+                    `measurement`, 
+                    `catagory`, 
+                    `registerd_by`
+                ) VALUES (
+                     
+                    :brand_id, 
+                    :type_name, 
+                    :service_type, 
+                    :measurement, 
+                    :catagory, 
+                    :registerd_by
+                )";
+
+        $stmt = $this->db->prepare($sql);
+
+        return $stmt->execute([
+            ':brand_id'     => $data['brand_id'],
+            ':type_name'    => $data['type_name'],
+            ':service_type' => $data['service_type'],
+            ':measurement'  => $data['measurement'],
+            ':catagory'     => $data['catagory'],
+            ':registerd_by' => $data['registerd_by'],
+        ]);
+    }
+public function isDuplicate(int $brandId, int $typeName, int $serviceType, string $measurement, string $catagory): bool
+{
+    $sql = "SELECT COUNT(*) FROM `car_type` 
+            WHERE `brand_id`     = :brand_id 
+              AND `type_name`    = :type_name 
+              AND `service_type` = :service_type 
+              AND `measurement`  = :measurement 
+              AND `catagory`     = :catagory";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([
+        ':brand_id'     => $brandId,
+        ':type_name'    => $typeName,
+        ':service_type' => $serviceType,
+        ':measurement'  => $measurement,
+        ':catagory'     => $catagory,
+    ]);
+
+    return ((int) $stmt->fetchColumn()) > 0;
+}
+    /**
+     * ለ Dropdown የሚሆኑ የ Brand መረጃዎችን ማምጫ
+     */
+    public function getActiveBrands(): array
+    {
+        $stmt = $this->db->prepare("SELECT id, brand_name FROM brand WHERE is_deleted = 0 ORDER BY brand_name ASC");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * ለ Dropdown የሚሆኑ የ Car Type List መረጃዎችን ማምጫ
+     */
+    public function getCarTypeLists(): array
+    {
+        $stmt = $this->db->prepare("SELECT id, cartype FROM cartypelist WHERE is_deleted = 0 ORDER BY cartype ASC");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * ለ Dropdown የሚሆኑ የ Service Type መረጃዎችን ማምጫ
+     */
+    public function getCarServices(): array
+    {
+        $stmt = $this->db->prepare("SELECT id, service_name FROM car_service   ORDER BY id ASC");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    /**
+ * የተመዘገቡ የመኪና/ማሽን አይነቶችን ከነ ሙሉ መረጃቸው ከዳታቤዝ ያመጣል
+ * 
+ * @return array
+ */
+// የተመዘገቡትን ሙሉ ዝርዝር ማምጫ
+public function getRegisteredCarTypes(): array
+{
+    try {
+        $sql = "SELECT 
+                    ct.id,
+                    ct.uuid,
+                    ct.brand_id,
+                    ct.type_name AS type_name_id,
+                    ct.service_type AS service_type_id,
+                    ct.measurement,
+                    ct.catagory,
+                    b.brand_name,
+                    ctl.cartype AS type_name, -- በዳታቤዙ መሰረት ctl.cartype ተደርጓል
+                    cs.service_name
+                FROM car_type ct
+                LEFT JOIN brand b ON ct.brand_id = b.id
+                LEFT JOIN cartypelist ctl ON ct.type_name = ctl.id
+                LEFT JOIN car_service cs ON ct.service_type = cs.id
+                WHERE ct.is_deleted = 0
+                ORDER BY ct.id DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
+    } catch (\PDOException $e) {
+        error_log("Error in getRegisteredCarTypes: " . $e->getMessage());
+        return [];
+    }
+}
+// መረጃ ማስተካከያ (Update)
+public function updateCarType(array $data): bool
+{
+    try {
+        $sql = "UPDATE car_type SET 
+                    brand_id = :brand_id,
+                    type_name = :type_name,
+                    service_type = :service_type,
+                    measurement = :measurement,
+                    catagory = :catagory,
+                    updated_by = :updated_by
+                WHERE uuid = :uuid AND is_deleted = 0";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':brand_id'     => $data['brand_id'],
+            ':type_name'    => $data['type_name'],
+            ':service_type' => $data['service_type'],
+            ':measurement'  => $data['measurement'],
+            ':catagory'     => $data['catagory'],
+            ':updated_by'   => $data['updated_by'],
+            ':uuid'         => $data['uuid'],
+        ]);
+
+        return $stmt->rowCount() > 0; // መረጃው በውኑ ከተቀየረ ብቻ true ይመልሳል
+    } catch (\PDOException $e) {
+        error_log("Error in updateCarType: " . $e->getMessage());
+        return false;
+    }
+}
+
+// መረጃ መሰረዣ (Soft Delete)
+public function deleteCarType(string $uuid, int $userId): bool
+{
+    try {
+        $sql = "UPDATE car_type SET is_deleted = 1, updated_by = :updated_by WHERE uuid = :uuid AND is_deleted = 0";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':updated_by' => $userId,
+            ':uuid'       => $uuid
+        ]);
+
+        return $stmt->rowCount() > 0; // መረጃው ከተሰረዘ ብቻ true ይመልሳል
+    } catch (\PDOException $e) {
+        error_log("Error in deleteCarType: " . $e->getMessage());
+        return false;
     }
 }
 }
