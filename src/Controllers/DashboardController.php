@@ -5,7 +5,9 @@ use App\Models\dashboardmodel;
 
 class DashboardController extends BaseController {
     
-    public function index() {
+
+
+public function index() {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -502,4 +504,62 @@ public function vehicleStatusView(): void
     
     $this->render('vehicle-status-analytics', $data);
 }
+
+
+public function vehicleServiceView(): void
+{
+    ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+    
+    // የተጠቃሚውን መብት እንፈትሻለን
+    AuthHelper::checkRole(['system_admin', 'admin', 'mgmt', 'officer']);
+    
+    $currentLang = $_SESSION['lang'] ?? 'am';
+    $branchModel = new DashboardModel($this->db);
+
+    // የተሽከርካሪ ሁኔታ መረጃውን ከሞዴል እንጠራለን
+    $reportData = $branchModel->vehiclesurviceGraph();
+
+    $data = [
+        'title'       => 'የተሽከርካሪ ሁኔታ ሪፖርት',
+        'currentLang' => $currentLang,
+        'reportData'  => $reportData // ዳታውን ወደ ቪው እናስተላልፋለን
+    ];
+    
+    $this->render('vichelservice-all-analytics', $data);
+}
+
+
+
+public function vehicleAgeView()
+{
+
+ ini_set('display_errors', 1);
+    ini_set('display_startup_errors', 1);
+    error_reporting(E_ALL);
+    
+    // የተጠቃሚውን መብት እንፈትሻለን
+    AuthHelper::checkRole(['system_admin', 'admin', 'mgmt', 'officer']);
+    
+    $currentLang = $_SESSION['lang'] ?? 'am';
+    $branchModel = new DashboardModel($this->db);
+   
+    // መረጃውን ከሞዴል መቀበል
+    $rawAgeData = $branchModel->vehicleAgeGraph()[0] ?? [];
+
+    $reportData = [
+        ['vichel_age' => '0 - 5 ዓመት', 'vehicle_count' => $rawAgeData['years_0_to_5'] ?? 0],
+        ['vichel_age' => '6 - 15 ዓመት', 'vehicle_count' => $rawAgeData['years_6_to_15'] ?? 0],
+        ['vichel_age' => '16 - 25 ዓመት', 'vehicle_count' => $rawAgeData['years_16_to_25'] ?? 0],
+        ['vichel_age' => '26 - 35 ዓመት', 'vehicle_count' => $rawAgeData['years_26_to_35'] ?? 0],
+        ['vichel_age' => '36 እና ከዚያ በላይ', 'vehicle_count' => $rawAgeData['years_36_plus'] ?? 0],
+    ];
+
+    $this->render('vichelage-all-analytics', [
+        'reportData' => $reportData
+    ]);
+}
+
+
 }
