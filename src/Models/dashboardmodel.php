@@ -530,6 +530,7 @@ public function vehicleStatusGraph(): array
                     WHEN LOWER(TRIM(vehicle_status)) = 'lost' THEN 'የጠፋ'
                     WHEN LOWER(TRIM(vehicle_status)) = 'destroyed' THEN 'የወደመ'
                     WHEN LOWER(TRIM(vehicle_status)) = 'disposed' THEN 'የተወገደ'
+                    WHEN LOWER(TRIM(vehicle_status)) = 'out_of_service' THEN 'በብልሽት የቆመ'
                     ELSE COALESCE(vehicle_status, 'ለይቶ የማይታወቅ')
                 END AS CallerName, 
                 COUNT(id) AS vehicle_count
@@ -544,5 +545,56 @@ public function vehicleStatusGraph(): array
     
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+
+
+
+public function vehiclesurviceGraph(): array
+{
+    $sql = "SELECT 
+    CASE 
+        WHEN LOWER(TRIM(cs.service_name)) = 'የህዝብ' THEN 'የህዝብ'
+        WHEN LOWER(TRIM(cs.service_name)) = 'የጭነት' THEN 'የጭነት'
+        WHEN LOWER(TRIM(cs.service_name)) = 'የእሳት አደጋ' THEN 'የእሳት አደጋ'
+        WHEN LOWER(TRIM(cs.service_name)) = 'የኮንስትራክሽን እና ግንባታ' THEN 'የኮንስትራክሽን እና ግንባታ'
+        WHEN LOWER(TRIM(cs.service_name)) = 'የህክምና አገልግሎት/አምቡላንስ' THEN 'የህክምና አገልግሎት/አምቡላንስ'
+        WHEN LOWER(TRIM(cs.service_name)) = 'የፍሳሽ ማስወገጃ' THEN 'የፍሳሽ ማስወገጃ'
+        WHEN LOWER(TRIM(cs.service_name)) = 'የደርቅ ቆሻሻ ማስወገጃ' THEN 'የደርቅ ቆሻሻ ማስወገጃ'
+        WHEN LOWER(TRIM(cs.service_name)) = 'shower truck(የፈሳሽ ጭነት)' THEN 'Shower truck(የፈሳሽ ጭነት)'
+        ELSE COALESCE(cs.service_name, 'ለይቶ የማይታወቅ')
+    END AS service_name, 
+    COUNT(v.id) AS vehicle_count
+FROM vehicles v
+JOIN car_type ct ON v.vehicle_type = ct.id
+JOIN car_service cs ON ct.service_type = cs.id
+WHERE v.is_active = 1 
+  AND v.deleted_at IS NULL
+GROUP BY cs.service_name
+ORDER BY vehicle_count DESC";
+            
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute();
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+public function vehicleAgeGraph(): array
+{
+    $sql = "SELECT 
+                SUM(CASE WHEN (YEAR(CURRENT_DATE()) - manufactured_year) <= 5 THEN 1 ELSE 0 END) AS years_0_to_5, 
+                SUM(CASE WHEN (YEAR(CURRENT_DATE()) - manufactured_year) BETWEEN 6 AND 15 THEN 1 ELSE 0 END) AS years_6_to_15, 
+                SUM(CASE WHEN (YEAR(CURRENT_DATE()) - manufactured_year) BETWEEN 16 AND 25 THEN 1 ELSE 0 END) AS years_16_to_25, 
+                SUM(CASE WHEN (YEAR(CURRENT_DATE()) - manufactured_year) BETWEEN 26 AND 35 THEN 1 ELSE 0 END) AS years_26_to_35, 
+                SUM(CASE WHEN (YEAR(CURRENT_DATE()) - manufactured_year) >= 36 THEN 1 ELSE 0 END) AS years_36_plus 
+            FROM vehicles 
+            WHERE is_active = 1 
+              AND deleted_at IS NULL";
+            
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute();
+    
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 
 }
