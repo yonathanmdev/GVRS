@@ -66,13 +66,61 @@ document.addEventListener("DOMContentLoaded", function() {
         return;
     }
 
-    // በ CallerName (የተሽከርካሪ ሁኔታ) እየሰበሰበ አጠቃላይ የመኪና ብዛትን ማሰላት
+    // በ service_name (የአገልግሎት ዓይነት) እየሰበሰበ አጠቃላይ የመኪና ብዛትን ማሰላት
     const aggregatedData = {};
     rawData.forEach(item => {
-        let statusName = item.service_name ? item.service_name.trim() : 'ሌላ';
+        let serviceName = item.service_name ? item.service_name.trim() : 'ሌላ';
         let vehicles = parseInt(item.vehicle_count) || 0;
         
-        aggregatedData[statusName] = (aggregatedData[statusName] || 0) + vehicles;
+        aggregatedData[serviceName] = (aggregatedData[serviceName] || 0) + vehicles;
+    });
+
+    const labels = Object.keys(aggregatedData);
+    const dataValues = Object.values(aggregatedData);
+
+    // ለእያንዳንዱ የአገልግሎት ዓይነት ተስማሚ ከለር በስሙ (Label) እየመረጠ የሚሰጥ ሎጂክ
+    const backgroundColors = labels.map(label => {
+        if (label.includes('የህዝብ')) {
+            return 'rgba(13, 110, 253, 0.7)';   // ሰማያዊ
+        } else if (label.includes('የጭነት')) {
+            return 'rgba(255, 193, 7, 0.7)';    // ቢጫ
+        } else if (label.includes('የእሳት አደጋ')) {
+            return 'rgba(220, 53, 69, 0.7)';    // ቀይ
+        } else if (label.includes('የኮንስትራክሽን እና ግንባታ')) {
+            return 'rgba(108, 117, 125, 0.7)'; // ግራጫ
+        } else if (label.includes('የህክምና አገልግሎት/አምቡላንስ') || label.includes('አምቡላንስ')) {
+            return 'rgba(25, 135, 84, 0.7)';    // አረንጓዴ
+        } else if (label.includes('የፍሳሽ ማስወገጃ') || label.includes('የፍሳሽ ማስወገጃ')) {
+            return 'rgba(253, 126, 20, 0.7)';   // ብርቱካናማ
+        } else if (label.includes('የደርቅ ቆሻሻ ማስወገጃ')) {
+            return 'rgba(111, 66, 193, 0.7)';   // ሃምራዊ (Purple)
+        } else if (label.includes('Shower truck(የፈሳሽ ጭነት)')) {
+            return 'rgba(13, 202, 240, 0.7)';   // ሲያን (Cyan)
+        } else {
+            return 'rgba(102, 16, 242, 0.7)';   // ሌላ ልዩ ከለር
+        }
+    });
+
+    const borderColors = labels.map(label => {
+        if (label.includes('የህዝብ')) {
+            return 'rgb(13, 110, 253)';
+        } else if (label.includes('የጭነት')) {
+            return 'rgb(255, 193, 7)';
+        } else if (label.includes('የእሳት አደጋ')) {
+            return 'rgb(220, 53, 69)';
+        } else if (label.includes('የኮንስትራክሽን እና ግንባታ')) {
+            return 'rgb(108, 117, 125)';
+        } else if (label.includes('የህክምና አገልግሎት/አምቡላንስ') || label.includes('አምቡላንስ')) {
+            return 'rgb(25, 135, 84)';
+        } else if (label.includes('የፍሳሽ ማስወገጃ') || label.includes('የፍሳሽ ማስወገጃ')) {
+            return 'rgb(253, 126, 20)';
+        } else if (label.includes('የደርቅ ቆሻሻ ማስወገጃ')) {
+            return 'rgb(111, 66, 193)';
+        } else if (label.includes('Shower truck(የፈሳሽ ጭነት)')) {
+            return 'rgb(13, 202, 240)';
+        } else {
+            return 'rgb(102, 16, 242)';
+        }
     });
 
     const canvasElement = document.getElementById('vehicleStatusChart');
@@ -86,24 +134,12 @@ document.addEventListener("DOMContentLoaded", function() {
         type: 'bar',
         plugins: [ChartDataLabels],
         data: {
-            labels: Object.keys(aggregatedData), // የ CallerName (ሁኔታ) ዝርዝር በ X-axis ላይ ይወጣል
+            labels: labels,
             datasets: [{
                 label: 'አጠቃላይ የመኪና ብዛት',
-                data: Object.values(aggregatedData), // በእያንዳንዱ ሁኔታ የተጠቃለለው የመኪና ድምር
-                backgroundColor: [
-                    'rgba(255, 193, 7, 0.7)',
-                    'rgba(13, 110, 253, 0.7)',
-                    'rgba(25, 135, 84, 0.7)',
-                    'rgba(220, 53, 69, 0.7)',
-                    'rgba(13, 202, 240, 0.7)'
-                ],
-                borderColor: [
-                    'rgb(255, 193, 7)',
-                    'rgb(13, 110, 253)',
-                    'rgb(25, 135, 84)',
-                    'rgb(220, 53, 69)',
-                    'rgb(13, 202, 240)'
-                ],
+                data: dataValues,
+                backgroundColor: backgroundColors,
+                borderColor: borderColors,
                 borderWidth: 1,
                 borderRadius: 4
             }]
@@ -114,7 +150,7 @@ document.addEventListener("DOMContentLoaded", function() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    suggestedMax: 500,
+                    suggestedMax: 1000,
                     ticks: {
                         stepSize: 1
                     }

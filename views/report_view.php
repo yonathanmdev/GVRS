@@ -78,7 +78,7 @@ $secondSelect = $_GET['second_select'] ?? ''; // ሁለተኛው ሳጥን ቫ�
         <div class="form-check">
             <input class="form-check-input report-type-radio" type="radio" name="report_type" id="type_calls" value="calls" <?= ($r_type == 'calls') ? 'checked' : '' ?>>
             <label class="form-check-label fw-bold small" for="type_calls">
-                🏷️ በወል መጠሪያቸው
+                🏷️ በልዩ መጠሪያቸው
             </label>
         </div>
     </div>
@@ -94,12 +94,12 @@ $secondSelect = $_GET['second_select'] ?? ''; // ሁለተኛው ሳጥን ቫ�
         <div class="col-md-6" id="box_second" style="<?= (!empty($r_type)) ? 'display:block;' : 'display:none;' ?>">
             <label for="second_select" class="form-label fw-bold">
                 <?php 
-                    if ($r_type == 'regional') echo 'የክልል ቢሮዎችን ይምረጡ';
+                    if ($r_type == 'regional') echo 'የክልል ቢሮዎችን መምሪያቸውን ጨምሮ ይምረጡ';
                     elseif ($r_type == 'agency') echo 'ቢሮውን ይምረጡ';
                     elseif ($r_type == 'department') echo 'መምሪያ ይምረጡ';
                     elseif ($r_type == 'zone') echo 'ዞን ይምረጡ';
                     elseif ($r_type == 'wereda') echo 'ዞን ይምረጡ';
-                    elseif ($r_type == 'calls') echo 'የወል መጠሪያ ይምረጡ';
+                    elseif ($r_type == 'calls') echo 'የልዩ መጠሪያ ይምረጡ';
                     else echo 'ይምረጡ';
                 ?>
             </label>
@@ -154,7 +154,7 @@ $secondSelect = $_GET['second_select'] ?? ''; // ሁለተኛው ሳጥን ቫ�
     <!-- 4ኛ ሳጥን (ለክልል ተጠሪዎች ብቻ የሚጨምር - ቢሮውን መርጦ መምሪያውን ለመምረጥ) -->
 <div class="col-md-6" id="box_fourth" style="<?= ($r_type == 'regional') ? '' : 'display:none;' ?>">
     <label for="fourth_select" class="form-label fw-bold">
-        የክልል ቢሮዎች መምሪያዎቻቸውን ጨምሮ
+        የክልል ቢሮዎች ብቻ መምሪያዎችን ሳይጨምር
     </label>
     <select class="form-control" id="fourth_select" name="fourth_select" onchange="this.form.submit()">
         <option value="">-- ምረጡ --</option>
@@ -179,91 +179,86 @@ $secondSelect = $_GET['second_select'] ?? ''; // ሁለተኛው ሳጥን ቫ�
                 </select>
             </div>
 
-            <div class="col-md-2">
-            <div class="d-flex align-items-end h-100">
-                <button type="submit" name="show_report"   class="btn btn-primary px-4">
-                    አሳይ
-                </button>
-            </div>
-            </div>
+<div class="col-md-2">
+    <div class="d-flex align-items-end h-100">
+        <!-- type="submit" እንደነበረ ሆኖ id ተሰጥቶታል -->
+        <button type="submit" id="showReportBtn" class="btn btn-primary px-4">
+            አሳይ
+        </button>
+    </div>
+</div>
         </div>
 
     </form>
 </div>
 
-<script nonce="<?php echo $GLOBALS['nonce'] ?? ''; ?>">
+<script nonce="<?php echo htmlspecialchars($GLOBALS['nonce'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
 document.addEventListener('DOMContentLoaded', function() {
-    const reportForm = document.getElementById('reportForm');
+    // ፎርሙን በሁለቱም ሊሆኑ በሚችሉ IDዎች መፈለግ
+    const reportForm = document.getElementById('reportForm') || document.getElementById('reportFilterForm');
     
-    // የሲስተምዎ የባዝ ዩአርኤል (ከ PHP ተቀብሎ ማስገባት ይቻላል)
-    const baseUrl = "<?php echo $baseUrl ?? ''; ?>"; // ወይም ቀጥታ የተወሰነ ሊንክ ከሆነ እዚህ ማስገባት ይቻላል
+    // የሲስተምዎ የባዝ ዩአርኤል
+    const baseUrl = "<?php echo $baseUrl ?? ''; ?>"; 
 
-    // የሬዲዮ በተኖች ሲቀየሩ ፎርሙ በራሱ እንዲሰር (Submit) እንዲደረግ
-    const radioButtons = document.querySelectorAll('.report-type-radio');
-    radioButtons.forEach(radio => {
-        radio.addEventListener('change', function() {
-            reportForm.action = ""; 
-            reportForm.removeAttribute('target');
-            reportForm.submit();
-        });
-    });
-
-    // የሁለተኛው ሳጥን (second_select) ሲቀየርም ፎርሙ እንዲሰር
-    const secondSelect = document.getElementById('second_select');
-    if (secondSelect) {
-        secondSelect.addEventListener('change', function() {
-            reportForm.action = "";
-            reportForm.removeAttribute('target');
-            reportForm.submit();
-        });
-    }
-
-    // «ሪፖርቱን አሳይ» ቁልፍ ሲጫን እንደ ሪፖርት አይነቱ መድረሻውን እና ታቡን መቀየር
-    reportForm.addEventListener('submit', function(e) {
-        const fifthSelect = document.getElementById('fifth_select').value;
-        
-        if (fifthSelect === 'ሠ1') {
-            reportForm.action = `${BASE_URL}/report1_view`;
-            reportForm.target = "_blank"; // በአዲስ ታብ እንዲከፈት
-        } else if (fifthSelect === 'ሠ2') {
-            reportForm.action = `${BASE_URL}/report2_view`;
-            reportForm.target = "_blank"; // በአዲስ ታብ እንዲከፈት
-        }
-    });
-});
-
-document.addEventListener("DOMContentLoaded", function() {
-    // ፎርሙን ወይም የሰሚት ቁልፉን እንይዛለን (እንደ ሲስተምዎ አወቃቀር id ወይም class ማስተካከል ይችላሉ)
-    
-    // ራዲዮ በተኖቹ ሲቀየሩ የትኛው ሳጥን መታየት እንዳለበት ለመቆጣጠር
-const radioRegional = document.getElementById('type_regional');
-const boxFourth = document.getElementById('box_fourth');
-
-// ራዲዮ በተኑ ሲመረጥ
-if (radioRegional && radioRegional.checked) {
-    if(boxFourth) boxFourth.style.display = 'block';
-}
-    
-    const reportForm = document.getElementById("reportFilterForm"); // ፎርሙ የሚጠቀምበት id 
-    
     if (reportForm) {
-        reportForm.addEventListener("submit", function(event) {
-            // የተመረጠ ራዲዮ በተን መኖሩን እንፈትሻለን
+        // 1. የሬዲዮ በተኖች ሲቀየሩ ፎርሙ በራሱ እንዲሰር (እንደቀደመው ስራው ይቀጥላል)
+        const radioButtons = document.querySelectorAll('.report-type-radio');
+        radioButtons.forEach(radio => {
+            radio.addEventListener('change', function() {
+                reportForm.action = ""; 
+                reportForm.removeAttribute('target');
+                reportForm.submit();
+            });
+        });
+
+        // 2. የሁለተኛው ሳጥን (second_select) ሲቀየርም ፎርሙ እንዲሰር (እንደቀደመው)
+        const secondSelect = document.getElementById('second_select');
+        if (secondSelect) {
+            secondSelect.addEventListener('change', function() {
+                reportForm.action = "";
+                reportForm.removeAttribute('target');
+                reportForm.submit();
+            });
+        }
+
+        // 3. «ሪፖርቱን አሳይ» ቁልፍ (ማለትም ፎርሙ ሲሰማራ)
+        reportForm.addEventListener('submit', function(e) {
+            // የተመረጠ ራዲዮ በተን መኖሩን ማረጋገጥ
             const selectedRadio = document.querySelector('input.report-type-radio:checked');
             
             if (!selectedRadio) {
-                event.preventDefault(); // ፎርሙ እንዳይሄድ ይከለክላል
-                
-                // የማስጠንቀቂያ መልእክት (Alert)
+                e.preventDefault(); 
                 alert("እባክዎ ከላይ ከሚገኙት የሪፖርት አይነቶች ውስጥ ቢያንስ አንዱን ይምረጡ!");
                 
-                // የመጀመሪያው ራዲዮ በተን ላይ ትኩረት (Focus) እንዲያደርግ ማድረግ ይቻላል
                 const firstRadio = document.getElementById('type_all');
                 if (firstRadio) {
                     firstRadio.focus();
                 }
+                return;
+            }
+
+            // እንደ ሪፖርት አይነቱ መድረሻውን እና ታቡን መቀየር (የአሁኑን ገጽ ሪሎድ ሳያደርግ በአዲስ ታብ _blank ይከፍታል)
+            const fifthSelectElement = document.getElementById('fifth_select');
+            if (fifthSelectElement) {
+                const fifthSelect = fifthSelectElement.value;
+                
+                if (fifthSelect === 'ሠ1') {
+                    reportForm.action = `${BASE_URL}/report1_view`;
+                    reportForm.target = "_blank"; 
+                } else if (fifthSelect === 'ሠ2') {
+                    reportForm.action = `${BASE_URL}/report2_view`;
+                    reportForm.target = "_blank"; 
+                }
             }
         });
+    }
+
+    // 4. ራዲዮ በተኑ ተመርጦ ሲመጣ 4ተኛው ሳጥን (box_fourth) እንዲታይ ማድረግ
+    const radioRegional = document.getElementById('type_regional');
+    const boxFourth = document.getElementById('box_fourth');
+
+    if (radioRegional && radioRegional.checked) {
+        if(boxFourth) boxFourth.style.display = 'block';
     }
 });
 </script>

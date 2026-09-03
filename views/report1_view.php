@@ -16,7 +16,15 @@ foreach ($carTypes as $type) {
         $activeCarTypes[] = $type;
     }
 }
-$colCount = count($activeCarTypes) + 8; // ተ.ቁ፣ ስም፣ የካር አይነቶች፣ አጠቃላይ እና 5 ስቴተሶች
+
+// 2. መረጃውን በአጠቃላይ ብዛት (total_vehicles) መሰረት ከትልቁ ወደ ትንሹ (Descending) እንመድበው
+usort($rows, function($a, $b) {
+    $totalA = $a['total_vehicles'] ?? 0;
+    $totalB = $b['total_vehicles'] ?? 0;
+    return $totalB - $totalA;
+});
+
+$colCount = count($activeCarTypes) + 9; // ተ.ቁ፣ ደረጃ፣ ስም፣ የካር አይነቶች፣ አጠቃላይ እና 5 ስቴተሶች
 ?>
 
 <!DOCTYPE html>
@@ -25,15 +33,15 @@ $colCount = count($activeCarTypes) + 8; // ተ.ቁ፣ ስም፣ የካር አይ
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($title); ?></title>
-    <!-- Bootstrap CSS (ካለዎት) -->
+    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     
     <style>
         /* =========================================================
-            A4 LANDSCAPE PRINT & PAGE STYLING
+            A3 LANDSCAPE PRINT & PAGE STYLING (ለሰፊው ሪፖርት የተመቻቸ)
             ========================================================= */
         @page {
-            size: A4 landscape;
+            size: A3 landscape;
             margin: 8mm;
         }
 
@@ -43,11 +51,10 @@ $colCount = count($activeCarTypes) + 8; // ተ.ቁ፣ ስም፣ የካር አይ
             color: #333;
         }
 
-        /* 1. የገጽ ማስቀመጫ ኮንቴነር (A4 Landscape Page Frame) */
         .a4-page {
             background: #ffffff;
             width: 100%;
-            max-width: 287mm; /* Standard A4 Landscape printable width */
+            max-width: 400mm;
             margin: 20px auto;
             padding: 12mm 15mm;
             border-radius: 4px;
@@ -56,7 +63,6 @@ $colCount = count($activeCarTypes) + 8; // ተ.ቁ፣ ስም፣ የካር አይ
             border-top: 8px solid #198754; 
         }
 
-        /* 2. የውስጥ የጌጣጌጥ ቦርደር መስመር (Inner Frame Strip) */
         .page-inner-border {
             border: 1px solid #dcdcdc;
             border-top: 3px solid #198754;
@@ -65,7 +71,6 @@ $colCount = count($activeCarTypes) + 8; // ተ.ቁ፣ ስም፣ የካር አይ
             position: relative;
         }
 
-        /* 3. ያማረ የቀለም ስትሪፕ (Color Gradient Accent Strip) */
         .accent-strip {
             height: 4px;
             background: linear-gradient(90deg, #198754 0%, #ffc107 50%, #198754 100%);
@@ -73,7 +78,6 @@ $colCount = count($activeCarTypes) + 8; // ተ.ቁ፣ ስም፣ የካር አይ
             border-radius: 2px;
         }
 
-        /* 4. የሪፖርት ራስጌ (Report Header) */
         .report-header {
             margin-bottom: 15px;
             border-bottom: 2px solid #eee;
@@ -90,7 +94,6 @@ $colCount = count($activeCarTypes) + 8; // ተ.ቁ፣ ስም፣ የካር አይ
             color: #666;
         }
 
-        /* 5. የሠንጠረዥ ስታይል (Table Styling for Crisp Print) */
         .printable-table {
             width: 100%;
             border-collapse: collapse !important;
@@ -115,40 +118,21 @@ $colCount = count($activeCarTypes) + 8; // ተ.ቁ፣ ስም፣ የካር አይ
             font-size: 12px;
         }
 
-        /* 6. የፊርማ ቦታ (Signature Block) */
-        .signature-section {
-            margin-top: 30px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            padding: 0 20px;
-        }
-        .sig-box {
-            width: 30%;
-            border-top: 1px dashed #555;
-            padding-top: 5px;
-            text-align: center;
-        }
-
-        /* 7. ማተሚያ ቁልፍ (Print Controls) */
         .no-print-bar {
-            max-width: 287mm;
-            margin: 10px auto;
+            max-width: 400mm;
+            margin: 15px auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        /* =========================================================
-            PRINT MEDIA QUERIES (ለህትመት ብቻ የሚሰሩ ደንቦች)
-            ========================================================= */
         @media print {
             body {
                 background: #fff !important;
                 padding: 0;
                 margin: 0;
             }
-            .no-print, .no-print-bar, div[style*="monospace"] {
+            .no-print, .no-print-bar {
                 display: none !important;
             }
             .a4-page {
@@ -182,32 +166,38 @@ $colCount = count($activeCarTypes) + 8; // ተ.ቁ፣ ስም፣ የካር አይ
 </head>
 <body>
 
-<!-- ለማተም እና ለመመለስ የሚያገለግል የቁጥጥር ባር -->
-<div class="no-print-bar no-print"></div>
+<!-- ኤክስፖርት እና ማተሚያ ቁልፎች የሚገኙበት ባር -->
+<div class="no-print-bar no-print">
+    <div>
+        <a href="javascript:history.back()" class="btn btn-secondary btn-sm">‹ ተመለስ</a>
+    </div>
+    <div>
+        <button id="exportExcelBtn" class="btn btn-success btn-sm">📥 ወደ Excel አውርድ (Export)</button>
+        <button id="printBtn" class="btn btn-primary btn-sm">🖨️ አትም (Print / PDF)</button>
+    </div>
+</div>
 
-<!-- A4 Landscape Page Frame -->
+<!-- A3 Landscape Page Frame -->
 <div class="a4-page">
     <div class="page-inner-border">
         
-        <!-- የውበት ቦርደር ስትሪፕ line -->
         <div class="accent-strip"></div>
 
-        <!-- የሪፖርት ራስጌ -->
         <div class="report-header d-flex justify-content-between align-items-center">
             <div>
-                <h4 class="report-title"><?php echo htmlspecialchars($title); ?></h4>
+                <h4 class="report-title"><?php echo htmlspecialchars($title); ?> (የተሽከርካሪዎች ማጠቃለያ)</h4>
                 <div class="report-date mt-1">
-                    ቀን፡ <?php echo date('Y-m-d'); ?> ዓ.ም | የተሽከርካሪዎች መረጃ ማጠቃለያ
+                    ቀን፡ <?php echo date('Y-m-d'); ?> ዓ.ም | በአጠቃላይ ብዛት የተደራጀ የደረጃ ሰንጠረዥ
                 </div>
             </div>
         </div>
 
-        <!-- የሪፖርት ሠንጠረዥ -->
         <div class="table-responsive">
-            <table class="table printable-table text-center">
+            <table id="reportTable" class="table printable-table text-center">
                 <thead>
                     <tr>
                         <th rowspan="2" class="align-middle">ተ.ቁ</th>
+                        <th rowspan="2" class="align-middle">ደረጃ (Rank)</th>
                         <th rowspan="2" class="align-middle text-start">የተቋሙ / ዞን ስም</th>
                         <th colspan="<?php echo count($activeCarTypes); ?>">የተሽከርካሪዎች ዓይነት</th>
                         <th rowspan="2" class="align-middle">አጠቃላይ ብዛት</th>
@@ -227,12 +217,12 @@ $colCount = count($activeCarTypes) + 8; // ተ.ቁ፣ ስም፣ የካር አይ
                     <?php 
                     if (!empty($rows)) {
                         $no = 1;
+                        $rank = 1;
                         $totals = [];
                         foreach ($activeCarTypes as $type) {
                             $totals['type_' . $type['id']] = 0;
                         }
                         
-                        // የስታተስ ድምር ማከማቻ ተለዋዋጮች 
                         $t_total_vehicles = 0; 
                         $t_active = 0; 
                         $t_out_of_service = 0; 
@@ -256,6 +246,7 @@ $colCount = count($activeCarTypes) + 8; // ተ.ቁ፣ ስም፣ የካር አይ
                     ?>
                             <tr>
                                 <td><?php echo $no++; ?></td>
+                                <td><span class="badge bg-secondary"><?php echo $rank++; ?></span></td>
                                 <td class="text-start fw-bold"><?php echo htmlspecialchars($row['branch_name'] ?? ''); ?></td>
                                 
                                 <?php foreach ($activeCarTypes as $type): 
@@ -275,9 +266,8 @@ $colCount = count($activeCarTypes) + 8; // ተ.ቁ፣ ስም፣ የካር አይ
                     <?php 
                         }
                     ?>
-                        <!-- ጠቅላላ ድምር (Grand Total) -->
                         <tr class="grand-total fw-bold">
-                            <td colspan="2" class="text-end">ጠ/ድምር:</td>
+                            <td colspan="3" class="text-end">ጠ/ድምር:</td>
                             <?php foreach ($activeCarTypes as $type): ?>
                                 <td><?php echo $totals['type_' . $type['id']]; ?></td>
                             <?php endforeach; ?>
@@ -297,21 +287,43 @@ $colCount = count($activeCarTypes) + 8; // ተ.ቁ፣ ስም፣ የካር አይ
             </table>
         </div>
 
-        <!-- የህጋዊነት እና ፊርማ ክፍል -->
-        <div class="signature-section">
-            <div class="sig-box">
-                ያዘጋጀው ስም እና ፊርማ
-            </div>
-            <div class="sig-box">
-                ያረጋገጠው ስም እና ፊርማ
-            </div>
-            <div class="sig-box">
-                ያጸደቀው ኃላፊ ስም እና ፊርማ
-            </div>
-        </div>
-
     </div>
 </div>
+
+<!-- ከ nonce ጋር የተዋቀረ የ JavaScript ኮድ -->
+<script nonce="<?php echo htmlspecialchars($GLOBALS['nonce'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+document.addEventListener("DOMContentLoaded", function() {
+    const exportBtn = document.getElementById("exportExcelBtn");
+    const printBtn = document.getElementById("printBtn");
+
+    if (exportBtn) {
+        exportBtn.addEventListener("click", function() {
+            let table = document.getElementById("reportTable");
+            if (!table) return;
+            
+            let html = table.outerHTML;
+            let blob = new Blob(['\ufeff' + html], {
+                type: 'application/vnd.ms-excel'
+            });
+            
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = 'Vehicle_Report_<?php echo date('Y-m-d'); ?>.xls';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    if (printBtn) {
+        printBtn.addEventListener("click", function() {
+            window.print();
+        });
+    }
+});
+</script>
 
 </body>
 </html>

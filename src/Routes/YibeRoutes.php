@@ -12,6 +12,7 @@ return [
     'vehicle-status-analytics' => ['DashboardController', 'vehicleStatusView', true],
     'vichelservice-all-analytics' => ['DashboardController', 'vehicleServiceView', true],
     'vichelage-all-analytics' => ['DashboardController', 'vehicleAgeView', true],
+    'additionalanalysisgraph' => ['DashboardController', 'dashboardSummaryReport', true],
     
 
 
