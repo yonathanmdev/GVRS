@@ -75,6 +75,42 @@ document.addEventListener("DOMContentLoaded", function() {
         aggregatedData[statusName] = (aggregatedData[statusName] || 0) + vehicles;
     });
 
+    const labels = Object.keys(aggregatedData);
+    const dataValues = Object.values(aggregatedData);
+
+    // ለእያንዳንዱ የተሽከርካሪ ሁኔታ ተስማሚ ከለር በሁኔታው ስም (Label) እየመረጠ የሚሰጥ ሎጂክ
+    const backgroundColors = labels.map(label => {
+        if (label.includes('በስራ ላይ ያለ')) {
+            return 'rgba(25, 135, 84, 0.7)';  // አረንጓዴ (በስራ ላይ ያለ)
+        } else if (label.includes('በብልሽት የቆመ')) {
+            return 'rgba(255, 193, 7, 0.7)';  // ቢጫ (በብልሽት የቆመ)
+        } else if (label.includes('የወደመ')) {
+            return 'rgba(220, 53, 69, 0.7)';  // ቀይ (የወደመ)
+        } else if (label.includes('የጠፋ')) {
+            return 'rgba(108, 117, 125, 0.7)'; // ግራጫ (የጠፋ)
+        } else if (label.includes('የተወገደ')) {
+            return 'rgba(52, 58, 64, 0.7)';   // ጥቁር/ጽኑ ግራጫ (የተወገደ)
+        } else {
+            return 'rgba(13, 202, 240, 0.7)';  // ሰማያዊ (ለሌሎች)
+        }
+    });
+
+    const borderColors = labels.map(label => {
+        if (label.includes('በስራ ላይ ያለ')) {
+            return 'rgb(25, 135, 84)';
+        } else if (label.includes('በብልሽት የቆመ')) {
+            return 'rgb(255, 193, 7)';
+        } else if (label.includes('የወደመ')) {
+            return 'rgb(220, 53, 69)';
+        } else if (label.includes('የጠፋ')) {
+            return 'rgb(108, 117, 125)';
+        } else if (label.includes('የተወገደ')) {
+            return 'rgb(52, 58, 64)';
+        } else {
+            return 'rgb(13, 202, 240)';
+        }
+    });
+
     const canvasElement = document.getElementById('vehicleStatusChart');
     if (!canvasElement) {
         console.error("የካንቫስ ኤለመንት (vehicleStatusChart) አልተገኘም!");
@@ -86,24 +122,12 @@ document.addEventListener("DOMContentLoaded", function() {
         type: 'bar',
         plugins: [ChartDataLabels],
         data: {
-            labels: Object.keys(aggregatedData), // የ CallerName (ሁኔታ) ዝርዝር በ X-axis ላይ ይወጣል
+            labels: labels,
             datasets: [{
                 label: 'አጠቃላይ የመኪና ብዛት',
-                data: Object.values(aggregatedData), // በእያንዳንዱ ሁኔታ የተጠቃለለው የመኪና ድምር
-                backgroundColor: [
-                    'rgba(255, 193, 7, 0.7)',
-                    'rgba(13, 110, 253, 0.7)',
-                    'rgba(25, 135, 84, 0.7)',
-                    'rgba(220, 53, 69, 0.7)',
-                    'rgba(13, 202, 240, 0.7)'
-                ],
-                borderColor: [
-                    'rgb(255, 193, 7)',
-                    'rgb(13, 110, 253)',
-                    'rgb(25, 135, 84)',
-                    'rgb(220, 53, 69)',
-                    'rgb(13, 202, 240)'
-                ],
+                data: dataValues,
+                backgroundColor: backgroundColors,
+                borderColor: borderColors,
                 borderWidth: 1,
                 borderRadius: 4
             }]
@@ -114,7 +138,7 @@ document.addEventListener("DOMContentLoaded", function() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    suggestedMax: 10,
+                    suggestedMax: 1000,
                     ticks: {
                         stepSize: 1
                     }

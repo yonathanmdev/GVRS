@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", function() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    suggestedMax: 5,
+                    suggestedMax: 1000,
                     ticks: {
                         stepSize: 1
                     }

@@ -117,7 +117,7 @@ public function getRegional2ndMemriya($parentId): array
             FROM branches 
             WHERE is_active = 1 
               AND `level` = 2 
-              AND `branch_type` = 'memriya' 
+              AND `branch_type` != 'memriya' 
               AND `functional_path` IS NOT NULL 
               AND `functional_path` != '' 
             ORDER BY name ASC;";
@@ -143,6 +143,7 @@ public function getRegional2ndBranches($parentId): array
               AND functional_parent_id = :parent_id 
               AND functional_path IS NOT NULL 
               AND functional_path != '' 
+              AND branch_type != 'memriya' 
             ORDER BY name ASC";
             
     $stmt = $this->db->prepare($sql);
@@ -176,7 +177,7 @@ public function getbytype($parentId): array
     $sql = "SELECT DISTINCT branch_type FROM branches
             WHERE is_active = 1 
               AND branch_type IS NOT NULL 
-              AND branch_type != '' 
+              AND branch_type != ''
             ORDER BY branch_type ASC";
             
     $stmt = $this->db->prepare($sql);
@@ -504,7 +505,14 @@ public function zonegraph(): array
     $sql = "SELECT 
                 b.id,
                 b.name AS Name, 
-                COALESCE(bt.type_in_am, b.branch_type) AS CallerName, 
+                CASE 
+                    WHEN LOWER(TRIM(b.branch_type)) = 'zone'  THEN 'ዞን'
+                    WHEN LOWER(TRIM(b.branch_type)) = 'regio'  THEN 'ሪጅኦ'
+                    WHEN LOWER(TRIM(b.branch_type)) = 'kifle_ketema'  THEN 'ክፍለ ከተማ'
+                    WHEN LOWER(TRIM(b.branch_type)) = 'ketema_woreda'  THEN 'ከተማ ወረዳ'
+                    WHEN LOWER(TRIM(b.branch_type)) = 'woreda'  THEN 'ወረዳ'
+                    ELSE COALESCE(bt.type_in_am, b.branch_type, 'ሌላ')
+                END AS CallerName,
                 COUNT(v.id) AS vehicle_count
             FROM branches b
             LEFT JOIN branch_type bt ON TRIM(b.branch_type) = TRIM(bt.type_in_eng)
@@ -512,7 +520,7 @@ public function zonegraph(): array
             WHERE b.is_active = 1 
               AND b.admin_path IS NOT NULL 
               AND b.admin_path != '' 
-            GROUP BY b.id, b.name, b.branch_type, bt.type_in_am
+            GROUP BY b.id, b.name, b.branch_type, bt.type_in_am, bt.type_in_eng
             ORDER BY b.name ASC";
             
     $stmt = $this->db->prepare($sql);
@@ -596,5 +604,120 @@ public function vehicleAgeGraph(): array
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
+
+// 1. አጠቃላይ ማጠቃለያ (Summary Cards) መረጃዎችን ማምጫ
+    public function getDashboardSummary(): array {
+        $summary = [];
+
+        // አጠቃላይ ተሽከርካሪዎች ብዛት
+        $sqlTotal = "SELECT COUNT(*) as total FROM vehicles WHERE is_active = 1 AND deleted_at IS NULL";
+        $stmtTotal = $this->db->prepare($sqlTotal);
+        $stmtTotal->execute();
+        $summary['total_vehicles'] = $stmtTotal->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+        // በስራ ላይ ያሉ
+        $sqlActive = "SELECT COUNT(*) as total FROM vehicles WHERE vehicle_status = 'active' AND is_active = 1 AND deleted_at IS NULL";
+        $stmtActive = $this->db->prepare($sqlActive);
+        $stmtActive->execute();
+        $summary['active_vehicles'] = $stmtActive->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+        // በጥገና ላይ ያሉ
+        $sqlMaint = "SELECT COUNT(*) as total FROM vehicles WHERE (vehicle_status = 'out_of_service') AND is_active = 1 AND deleted_at IS NULL";
+        $stmtMaint = $this->db->prepare($sqlMaint);
+        $stmtMaint->execute();
+        $summary['maintenance_vehicles'] = $stmtMaint->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+        // ጉዳት የደረሰባቸው / የተወገዱ
+        $sqlDamaged = "SELECT COUNT(*) as total FROM vehicles WHERE (vehicle_status = 'disposed' OR vehicle_status = 'destroyed') AND is_active = 1 AND deleted_at IS NULL";
+        $stmtDamaged = $this->db->prepare($sqlDamaged);
+        $stmtDamaged->execute();
+        $summary['damaged_vehicles'] = $stmtDamaged->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+
+        return $summary;
+    }
+
+    //2. በተሽከርካሪ አገልግሎት ዓይነት (Service Type Chart) ዳታ ማምጫ
+    public function getVehiclesByServiceType(): array {
+        $sql = "SELECT 
+    CASE 
+        WHEN LOWER(TRIM(cs.service_name)) = 'የህዝብ' THEN 'የህዝብ'
+        WHEN LOWER(TRIM(cs.service_name)) = 'የጭነት' THEN 'የጭነት'
+        WHEN LOWER(TRIM(cs.service_name)) = 'የእሳት አደጋ' THEN 'የእሳት አደጋ'
+        WHEN LOWER(TRIM(cs.service_name)) = 'የኮንስትራክሽን እና ግንባታ' THEN 'የኮንስትራክሽን እና ግንባታ'
+        WHEN LOWER(TRIM(cs.service_name)) = 'የህክምና አገልግሎት/አምቡላንስ' THEN 'የህክምና አገልግሎት/አምቡላንስ'
+        WHEN LOWER(TRIM(cs.service_name)) = 'የፍሳሽ ማስወገጃ' THEN 'የፍሳሽ ማስወገጃ'
+        WHEN LOWER(TRIM(cs.service_name)) = 'የደርቅ ቆሻሻ ማስወገጃ' THEN 'የደርቅ ቆሻሻ ማስወገጃ'
+        WHEN LOWER(TRIM(cs.service_name)) = 'shower truck(የፈሳሽ ጭነት)' THEN 'Shower truck(የፈሳሽ ጭነት)'
+        ELSE COALESCE(cs.service_name, 'ለይቶ የማይታወቅ')
+    END AS service_name, 
+    COUNT(v.id) AS vehicle_count
+FROM vehicles v
+JOIN car_type ct ON v.vehicle_type = ct.id
+JOIN car_service cs ON ct.service_type = cs.id
+WHERE v.is_active = 1 
+  AND v.deleted_at IS NULL
+GROUP BY cs.service_name
+ORDER BY vehicle_count DESC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // 3. በተሽከርካሪ ወቅታዊ ሁኔታ (Status Doughnut Chart) ዳታ ማምጫ
+    public function getVehiclesByStatus(): array {
+        $sql = "SELECT 
+                CASE 
+                    WHEN LOWER(TRIM(vehicle_status)) = 'active' THEN 'በስራ ላይ ያለ'
+                    WHEN LOWER(TRIM(vehicle_status)) = 'lost' THEN 'የጠፋ'
+                    WHEN LOWER(TRIM(vehicle_status)) = 'destroyed' THEN 'የወደመ'
+                    WHEN LOWER(TRIM(vehicle_status)) = 'disposed' THEN 'የተወገደ'
+                    WHEN LOWER(TRIM(vehicle_status)) = 'out_of_service' THEN 'በብልሽት የቆመ'
+                    ELSE COALESCE(vehicle_status, 'ለይቶ የማይታወቅ')
+                END AS CallerName, 
+                COUNT(id) AS vehicle_count
+            FROM vehicles
+            WHERE is_active = 1 
+              AND deleted_at IS NULL
+            GROUP BY 
+                CASE 
+                    WHEN LOWER(TRIM(vehicle_status)) = 'active' THEN 'በስራ ላይ ያለ'
+                    WHEN LOWER(TRIM(vehicle_status)) = 'lost' THEN 'የጠፋ'
+                    WHEN LOWER(TRIM(vehicle_status)) = 'destroyed' THEN 'የወደመ'
+                    WHEN LOWER(TRIM(vehicle_status)) = 'disposed' THEN 'የተወገደ'
+                    WHEN LOWER(TRIM(vehicle_status)) = 'out_of_service' THEN 'በብልሽት የቆመ'
+                    ELSE COALESCE(vehicle_status, 'ለይቶ የማይታወቅ')
+                END
+            ORDER BY vehicle_count DESC";
+            
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // 4. በተሽከርካሪ ዕድሜ ክልል (Vehicle Age Chart) ዳታ ማምጫ
+    public function getVehiclesByAge(): array {
+        $sql = "SELECT vichel_age, COUNT(*) as vehicle_count 
+                FROM vehicles 
+                WHERE is_active = 1 AND deleted_at IS NULL 
+                GROUP BY vichel_age";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // 5. በተመረቱበት ዓመት ልክ መረጃ ማምጫ
+    public function getMonthlyTrend(): array {
+        $sql = "SELECT manufactured_year AS manufactured_year, COUNT(*) as activity_count 
+                FROM vehicles
+                WHERE is_active = 1 
+                  AND deleted_at IS NULL 
+                  AND manufactured_year IS NOT NULL
+                GROUP BY manufactured_year 
+                ORDER BY manufactured_year ASC";
+                
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
 }

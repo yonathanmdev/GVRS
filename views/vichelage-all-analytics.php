@@ -69,7 +69,41 @@ document.addEventListener("DOMContentLoaded", function() {
     const labels = rawData.map(item => item.vichel_age);
     const dataValues = rawData.map(item => item.vehicle_count);
 
-    // ከኤችቲኤምኤል ካንቫስ ID ጋር በትክክል እንዲጣጣም ተስተካክሏል
+    // እንደ ዕድሜ ክልሉ (Label) ሁኔታ ከለሮችን በሉፕ መምረጥ
+    const backgroundColors = labels.map(ageLabel => {
+        let label = ageLabel ? ageLabel.trim() : '';
+        if (label.includes('0 - 5')) {
+            return 'rgba(25, 135, 84, 0.7);';   // አረንጓዴ (ከ 0 - 5 ዓመት)
+        } else if (label.includes('6 - 15')) {
+            return 'rgba(13, 110, 253, 0.7)';  // ሰማያዊ
+        } else if (label.includes('16 - 25')) {
+            return 'rgba(13, 202, 240, 0.7)';  // ሲያን (Cyan)
+        } else if (label.includes('26 - 35')) {
+            return 'rgba(255, 193, 7, 0.7)';   // ቢጫ/ብርቱካናማ
+        } else if (label.includes('36') || label.includes('ከዚሁ በላይ')) {
+            return 'rgba(220, 53, 69, 0.7)';   // ቀይ (36 እና ከዚያ በላይ)
+        } else {
+            return 'rgba(108, 117, 125, 0.7)'; // ነባሪ ግራጫ
+        }
+    });
+
+    const borderColors = labels.map(ageLabel => {
+        let label = ageLabel ? ageLabel.trim() : '';
+        if (label.includes('0 - 5')) {
+            return 'rgb(25, 135, 84)';
+        } else if (label.includes('6 - 15')) {
+            return 'rgb(13, 110, 253)';
+        } else if (label.includes('16 - 25')) {
+            return 'rgb(13, 202, 240)';
+        } else if (label.includes('26 - 35')) {
+            return 'rgb(255, 193, 7)';
+        } else if (label.includes('36') || label.includes('ከዚሁ በላይ')) {
+            return 'rgb(220, 53, 69)';
+        } else {
+            return 'rgb(108, 117, 125)';
+        }
+    });
+
     const canvasElement = document.getElementById('vehicleAgeChart');
     if (!canvasElement) {
         console.error("የካንቫስ ኤለመንት (vehicleAgeChart) አልተገኘም!");
@@ -85,20 +119,8 @@ document.addEventListener("DOMContentLoaded", function() {
             datasets: [{
                 label: 'የተሽከርካሪ ብዛት',
                 data: dataValues,
-                backgroundColor: [
-                    'rgba(255, 193, 7, 0.7)',
-                    'rgba(13, 110, 253, 0.7)',
-                    'rgba(25, 135, 84, 0.7)',
-                    'rgba(220, 53, 69, 0.7)',
-                    'rgba(13, 202, 240, 0.7)'
-                ],
-                borderColor: [
-                    'rgb(255, 193, 7)',
-                    'rgb(13, 110, 253)',
-                    'rgb(25, 135, 84)',
-                    'rgb(220, 53, 69)',
-                    'rgb(13, 202, 240)'
-                ],
+                backgroundColor: backgroundColors,
+                borderColor: borderColors,
                 borderWidth: 1,
                 borderRadius: 4
             }]
@@ -109,7 +131,7 @@ document.addEventListener("DOMContentLoaded", function() {
             scales: {
                 y: {
                     beginAtZero: true,
-                    suggestedMax: 10,
+                    suggestedMax: 1000,
                     ticks: {
                         stepSize: 1
                     }
