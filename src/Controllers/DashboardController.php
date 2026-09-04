@@ -613,13 +613,105 @@ public function dashboardSummaryReport()
             'activity_count'    => (int)$row['activity_count']
         ];
     }
-    // ሁሉንም መረጃዎች በለመዱት የ $this->render() ስትራክቸር ወደ ቪው መጫን
+// 6.ምንም አይነት ተሽከርካሪ የሌላቸው ተቋማት
+    $rawNoVehicleData = $branchModel->novichelregiongraph($id ?? null);
+    $noVehicleData = [];
+    if (!empty($rawNoVehicleData)) {
+        foreach ($rawNoVehicleData as $row) {
+            $noVehicleData[] = [
+                'name'         => $row['Name'],
+                'caller_name'  => $row['CallerName'],
+                'vehicle_count'=> (int)$row['vehicle_count']
+            ];
+        }
+    }
+
+
+
+$rawTopVehiclesData = $branchModel->topvehiclesregiongraph($id ?? null);
+$topVehiclesData = [];
+if (!empty($rawTopVehiclesData)) {
+    foreach ($rawTopVehiclesData as $row) {
+        $topVehiclesData[] = [
+            'name'         => $row['Name'],
+            'caller_name'  => $row['CallerName'],
+            'vehicle_count'=> (int)$row['vehicle_count']
+        ];
+    }
+}
+
+$rawPurchaseData = $branchModel->vehiclePurchaseYearGraph($id ?? null);
+$purchaseYearData = [];
+if (!empty($rawPurchaseData)) {
+    foreach ($rawPurchaseData as $row) {
+        $purchaseYearData[] = [
+            'purchase_year' => $row['purchase_year'],
+            'vehicle_count' => (int)$row['vehicle_count']
+        ];
+    }
+}
+
+
+$rawZoneWorkingData = $branchModel->zoneWorkingVehiclesGraph($id ?? null);
+$zoneWorkingData = [];
+if (!empty($rawZoneWorkingData)) {
+    foreach ($rawZoneWorkingData as $row) {
+        $zoneWorkingData[] = [
+            'zone_name'     => $row['zone_name'],
+            'vehicle_count' => (int)$row['vehicle_count']
+        ];
+    }
+}
+
+$rawZoneDamagedData = $branchModel->zoneDamagedVehiclesGraph($id ?? null);
+$zoneDamagedData = [];
+if (!empty($rawZoneDamagedData)) {
+    foreach ($rawZoneDamagedData as $row) {
+        $zoneDamagedData[] = [
+            'zone_name'     => $row['zone_name'],
+            'vehicle_count' => (int)$row['vehicle_count']
+        ];
+    }
+}
+
+
+$rawMetroData = $branchModel->metropolitanVehiclesGraph($id ?? null);
+$metropolitanData = [];
+if (!empty($rawMetroData)) {
+    foreach ($rawMetroData as $row) {
+        $metropolitanData[] = [
+            'metro_name'    => $row['metro_name'],
+            'vehicle_count' => (int)$row['vehicle_count']
+        ];
+    }
+}
+
+
+
+    // ሁሉንም መረጃዎች ወደ ቪው መጫን (exit ስለሌለ አሁን በቀጥታ ወደ ቪው ይተላለፋል)
     $this->renderprintable('additionalanalysisgraph', [
-        'summary'     => $summary,
-        'serviceData' => $serviceData,
-        'statusData'  => $statusData,
-        'reportData'  => $reportData,
-        'trendData'   => $trendData
+        'summary'       => $summary,
+        'serviceData'   => $serviceData,
+        'statusData'    => $statusData,
+        'reportData'    => $reportData,
+        'trendData'     => $trendData,
+        'noVehicleData' => $noVehicleData,
+        'topVehiclesData' => $topVehiclesData,
+        'purchaseYearData' => $purchaseYearData,
+        'zoneWorkingData' => $zoneWorkingData,
+        'zoneDamagedData' => $zoneDamagedData,
+        'metropolitanData' => $metropolitanData
+       
+        
     ]);
 }
+
+
+
+
+
+
+
+
+
 }
