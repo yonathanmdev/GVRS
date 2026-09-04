@@ -233,7 +233,7 @@ public function getDynamicVehicleReport($filters): array
                 break;
 
             case 'agency': 
-                $sql .= " AND b.level = 2 AND b.functional_path IS NOT NULL AND b.functional_path != ''";
+                $sql .= " AND b.level = 2 AND b.branch_type != 'memriya' AND b.functional_path IS NOT NULL AND b.functional_path != ''";
                 if ($secondSelect !== 'all' && $secondSelect !== '') {
                     $sql .= " AND b.functional_parent_id = :second_select";
                     $params['second_select'] = $secondSelect;
@@ -486,7 +486,7 @@ public function bureausgraph(?string $id = null): array
                 COUNT(v.id) AS vehicle_count
             FROM branches b
             LEFT JOIN branch_type bt ON b.branch_type = bt.type_in_eng
-            LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1
+            LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1 
             WHERE b.is_active = 1  
               AND b.functional_path IS NOT NULL 
               AND b.functional_path != ''
@@ -719,5 +719,223 @@ ORDER BY vehicle_count DESC";
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+
+
+
+public function novichelregiongraph(?string $id = null): array
+{
+    $sql = "SELECT 
+        b.name AS Name, 
+        COALESCE(bt.type_in_am, b.branch_type) AS CallerName, 
+        COUNT(v.id) AS vehicle_count
+    FROM branches b
+    LEFT JOIN branch_type bt ON b.branch_type = bt.type_in_eng
+    LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1 
+    WHERE b.is_active = 1  
+      AND b.functional_path IS NOT NULL 
+      AND b.functional_path != ''";
+
+    $params = [];
+    
+    // የተመረጠው $id ካለ ኩየሪውን ማጣሪያ እንጨምርበት
+    if (!empty($id)) {
+        // $id የሚወክለው የባንክ/የተቋም መለያ (ID) ወይም  ፓርዝ ካልሆነ 
+        // እንደ ዳታቤዙ አወቃቀር b.id = ? ወይም b.functional_path LIKE ? ማድረግ ይቻላል
+        $sql .= " AND (b.id = ? OR b.parent_id = ?)";
+        $params[] = $id;
+        $params[] = $id;
+    }
+
+    $sql .= " GROUP BY b.id, b.name, b.branch_type, bt.type_in_am
+              HAVING COUNT(v.id) = 0";
+              
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute($params);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+public function topvehiclesregiongraph(?string $id = null): array
+{
+    $sql = "SELECT 
+        b.name AS Name, 
+        COALESCE(bt.type_in_am, b.branch_type) AS CallerName, 
+        COUNT(v.id) AS vehicle_count
+    FROM branches b
+    LEFT JOIN branch_type bt ON b.branch_type = bt.type_in_eng
+    LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1 
+    WHERE b.is_active = 1  
+      AND b.functional_path IS NOT NULL 
+      AND b.functional_path != ''";
+
+    $params = [];
+    
+    if (!empty($id)) {
+        $sql .= " AND (b.id = ? OR b.parent_id = ?)";
+        $params[] = $id;
+        $params[] = $id;
+    }
+
+    // 20 እና ከዛ በላይ ያላቸውን ለማምጣት
+    $sql .= " GROUP BY b.id, b.name, b.branch_type, bt.type_in_am
+              HAVING COUNT(v.id) >= 20
+              ORDER BY vehicle_count DESC";
+              
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute($params);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+public function vehiclePurchaseYearGraph(?string $id = null): array
+{
+    $sql = "SELECT 
+        COALESCE(v.purchase_year, 'ያልታወቀ') AS purchase_year, 
+        COUNT(v.id) AS vehicle_count
+    FROM vehicles v
+    LEFT JOIN branches b ON v.branch_id = b.id
+    WHERE v.is_active = 1";
+
+    $params = [];
+    
+    if (!empty($id)) {
+        $sql .= " AND (b.id = ? OR b.parent_id = ?)";
+        $params[] = $id;
+        $params[] = $id;
+    }
+
+    $sql .= " GROUP BY v.purchase_year
+              ORDER BY purchase_year ASC";
+              
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute($params);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+public function zoneWorkingVehiclesGraph(?string $id = null): array
+{
+    $sql = "SELECT 
+        b.name AS zone_name, 
+        COUNT(v.id) AS vehicle_count
+    FROM branches b
+    LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1 
+    -- እዚህ ጋር የተሽከርካሪው ሁኔታ በስራ ላይ መሆኑን የሚገልጸውን ማጣሪያ (ለምሳሌ status ወይም working condition) ያስገቡ
+    WHERE b.is_active = 1  and vehicle_status = 'active'
+      AND b.admin_path IS NOT NULL 
+      AND b.admin_path != ''";
+
+    $params = [];
+    
+    if (!empty($id)) {
+        $sql .= " AND (b.id = ? OR b.parent_id = ?)";
+        $params[] = $id;
+        $params[] = $id;
+    }
+
+    $sql .= " GROUP BY b.id, b.name
+              ORDER BY vehicle_count DESC";
+              
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute($params);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+
+
+public function zoneDamagedVehiclesGraph(?string $id = null): array
+{
+    $sql = "SELECT 
+        b.name AS zone_name, 
+        COUNT(v.id) AS vehicle_count
+    FROM branches b
+    LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1 
+    -- እዚህ ጋር የወደሙ/ጉዳት የደረሰባቸውን ተሽከርካሪዎች የሚለይበትን condition (ለምሳሌ v.status = 'damaged' ወይም የመሳሰሉትን) ማካተት ይቻላል
+    WHERE b.is_active = 1  and vehicle_status= 'destroyed'
+      AND b.admin_path IS NOT NULL 
+      AND b.admin_path != ''";
+
+    $params = [];
+    
+    if (!empty($id)) {
+        $sql .= " AND (b.id = ? OR b.parent_id = ?)";
+        $params[] = $id;
+        $params[] = $id;
+    }
+
+    $sql .= " GROUP BY b.id, b.name
+              ORDER BY vehicle_count DESC";
+              
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute($params);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+public function metropolitanVehiclesGraph(?string $id = null): array
+{
+    $sql = "SELECT 
+        b.name AS metro_name, 
+        COUNT(v.id) AS vehicle_count
+    FROM branches b
+    LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1 
+    -- እዚህ ጋር የሪጅኦፖሊታን ከተሞችን የሚለይበትን condition (ለምሳሌ b.branch_type = 'metropolitan' ወይም የመሳሰሉትን) ማካተት ይቻላል
+    WHERE b.is_active = 1  and b.branch_type = 'regio'
+      AND b.admin_path IS NOT NULL 
+      AND b.admin_path != ''";
+
+    $params = [];
+    
+    if (!empty($id)) {
+        $sql .= " AND (b.id = ? OR b.parent_id = ?)";
+        $params[] = $id;
+        $params[] = $id;
+    }
+
+    $sql .= " GROUP BY b.id, b.name
+              ORDER BY vehicle_count DESC";
+              
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute($params);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
+public function inactiveVehiclesByInstitutionGraph(?string $id = null): array
+{
+    $sql = "SELECT 
+        b.name AS institution_name, 
+        COUNT(v.id) AS vehicle_count
+    FROM branches b
+    LEFT JOIN vehicles v ON b.id = v.branch_id
+    WHERE b.is_active = 1  and v.vehicle_status != 'active'
+      AND b.functional_path IS NOT NULL 
+      AND b.functional_path != ''";
+
+    $params = [];
+    
+    if (!empty($id)) {
+        $sql .= " AND (b.id = ? OR b.parent_id = ?)";
+        $params[] = $id;
+        $params[] = $id;
+    }
+
+    $sql .= " GROUP BY b.id, b.name
+              HAVING COUNT(v.id) > 0
+              ORDER BY vehicle_count DESC";
+              
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute($params);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
 
 }
