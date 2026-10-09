@@ -213,17 +213,20 @@
         }
     }
 
-    memriyaSelect.addEventListener('change', function () {
+   memriyaSelect.addEventListener('change', function () {
+    if (this.value) {
+        memriyaZoneSelect.style.display = '';
+        memriyaZoneLabel.style.display = '';
+        // If a zone is already chosen, keep the form enabled with the
+        // new memriya; otherwise it stays disabled until a zone is picked.
+        tryActivateDepartment();
+    } else {
+        memriyaZoneSelect.style.display = 'none';
+        memriyaZoneLabel.style.display = 'none';
+        memriyaZoneSelect.selectedIndex = 0;
         deactivateFields();
-        if (this.value) {
-            memriyaZoneSelect.style.display = '';
-            memriyaZoneLabel.style.display = '';
-        } else {
-            memriyaZoneSelect.style.display = 'none';
-            memriyaZoneLabel.style.display = 'none';
-            memriyaZoneSelect.selectedIndex = 0;
-        }
-    });
+    }
+});
 
     memriyaZoneSelect.addEventListener('change', tryActivateDepartment);
 
