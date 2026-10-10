@@ -10,6 +10,10 @@ return [
     'bureau-analytics' => ['DashboardController', 'bureausGraphView', true],
     'zone-analytics' => ['DashboardController', 'zoneAnalyticsView', true],
     'vehicle-status-analytics' => ['DashboardController', 'vehicleStatusView', true],
+    'vichelservice-all-analytics' => ['DashboardController', 'vehicleServiceView', true],
+    'vichelage-all-analytics' => ['DashboardController', 'vehicleAgeView', true],
+    'additionalanalysisgraph' => ['DashboardController', 'dashboardSummaryReport', true],
+    
 
 
 /*የሶስቱንም አፈጻጸም የሚያወጣው 

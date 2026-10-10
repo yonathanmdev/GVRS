@@ -1,6 +1,19 @@
 <?php 
 $rows = $reportData['report_data'] ?? [];
-$colCount = 8; // ተ.ቁ፣ ስም፣ 5 የአገልግሎት ዘመን ስቴተሶች፣ እና አጠቃላይ ድምር
+
+// 1. መረጃውን በ "በጣም ዝቅተኛ (years_36_plus)" ብዛት መሰረት ከትልቁ ወደ ትንሹ (Descending) እንመድበው
+usort($rows, function($a, $b) {
+    $valA = $a['years_36_plus'] ?? 0;
+    $valB = $b['years_36_plus'] ?? 0;
+    if ($valB === $valA) {
+        $totalA = ($a['years_0_to_5'] ?? 0) + ($a['years_6_to_15'] ?? 0) + ($a['years_16_to_25'] ?? 0) + ($a['years_26_to_35'] ?? 0) + ($a['years_36_plus'] ?? 0);
+        $totalB = ($b['years_0_to_5'] ?? 0) + ($b['years_6_to_15'] ?? 0) + ($b['years_16_to_25'] ?? 0) + ($b['years_26_to_35'] ?? 0) + ($b['years_36_plus'] ?? 0);
+        return $totalB - $totalA;
+    }
+    return $valB - $valA;
+});
+
+$colCount = 13; 
 ?>
 
 <!DOCTYPE html>
@@ -13,9 +26,6 @@ $colCount = 8; // ተ.ቁ፣ ስም፣ 5 የአገልግሎት ዘመን ስቴ�
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     
     <style>
-        /* =========================================================
-            A4 LANDSCAPE PRINT & PAGE STYLING (ከ ሠ1 የተወሰደ ማራኪ ዲዛይን)
-            ========================================================= */
         @page {
             size: A4 landscape;
             margin: 8mm;
@@ -73,44 +83,30 @@ $colCount = 8; // ተ.ቁ፣ ስም፣ 5 የአገልግሎት ዘመን ስቴ�
         .printable-table {
             width: 100%;
             border-collapse: collapse !important;
-            font-size: 11px;
+            font-size: 10px; 
             margin-bottom: 20px;
         }
         .printable-table th, 
         .printable-table td {
             border: 1px solid #333 !important;
-            padding: 6px 4px !important;
+            padding: 5px 3px !important;
             vertical-align: middle;
         }
         .printable-table thead th {
             background-color: #e8f5e9 !important;
             color: #000 !important;
             font-weight: bold;
-            font-size: 11px;
+            font-size: 10px;
         }
         .printable-table .grand-total {
             background-color: #f1f1f1 !important;
             font-weight: bold;
-            font-size: 12px;
-        }
-
-        .signature-section {
-            margin-top: 30px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            padding: 0 20px;
-        }
-        .sig-box {
-            width: 30%;
-            border-top: 1px dashed #555;
-            padding-top: 5px;
-            text-align: center;
+            font-size: 11px;
         }
 
         .no-print-bar {
             max-width: 287mm;
-            margin: 10px auto;
+            margin: 15px auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -156,7 +152,16 @@ $colCount = 8; // ተ.ቁ፣ ስም፣ 5 የአገልግሎት ዘመን ስቴ�
 </head>
 <body>
 
-<div class="no-print-bar no-print"></div>
+<!-- ኤክስፖርት እና ማተሚያ ቁልፎች የሚገኙበት ባር -->
+<div class="no-print-bar no-print">
+    <div>
+        <a href="javascript:history.back()" class="btn btn-secondary btn-sm">‹ ተመለስ</a>
+    </div>
+    <div>
+        <button id="exportExcelBtn" class="btn btn-success btn-sm">📥 ወደ Excel አውርድ (Export)</button>
+        <button id="printBtn" class="btn btn-primary btn-sm">🖨️ አትም (Print / PDF)</button>
+    </div>
+</div>
 
 <div class="a4-page">
     <div class="page-inner-border">
@@ -167,49 +172,84 @@ $colCount = 8; // ተ.ቁ፣ ስም፣ 5 የአገልግሎት ዘመን ስቴ�
             <div>
                 <h4 class="report-title"><?php echo htmlspecialchars($title ?? 'የተሽከርካሪዎች አገልግሎት ዘመን ሪፖርት'); ?></h4>
                 <div class="report-date mt-1">
-                    ቀን፡ <?php echo date('Y-m-d'); ?> ዓ.ም | በአገልግሎት ዘመን የተመደበ
+                    ቀን፡ <?php echo date('Y-m-d'); ?> ዓ.ም | በጣም ዝቅተኛ በሆነው (36+ ዓመት) ተደርጎ የተዘጋጀ
                 </div>
             </div>
         </div>
 
         <div class="table-responsive">
-            <table class="table printable-table text-center">
+            <table id="reportTable" class="table printable-table text-center">
                 <thead>
-                    <!-- የላይኛው ሄደር (ጥራት ምደባ) -->
+                    <!-- የላይኛው ሄደር (የጥራት ምደባ ከዓመት ክልል ጋር እና የየራሳቸው ደረጃዎች) -->
                     <tr>
                         <th rowspan="2" class="align-middle">ተ.ቁ</th>
                         <th rowspan="2" class="align-middle text-start">የተቋሙ / ዞን ስም</th>
-                        <th class="text-success">በጣም ጥሩ</th>
-                        <th class="text-primary">ጥሩ</th>
-                        <th class="text-warning text-dark">መካከለኛ</th>
-                        <th class="text-danger">ዝቅተኛ</th>
-                        <th class="text-dark bg-secondary bg-opacity-25">በጣም ዝቅተኛ</th>
+                        
+                        <th colspan="2" class="text-success">በጣም ጥሩ<br><span style="font-weight:normal; font-size:9px;">(እስከ 5 ዓመት የሠራ)</span></th>
+                        <th colspan="2" class="text-primary">ጥሩ<br><span style="font-weight:normal; font-size:9px;">(ከ 6- 15 ዓመት የሠራ)</span></th>
+                        <th colspan="2" class="text-warning text-dark">መካከለኛ<br><span style="font-weight:normal; font-size:9px;">(ከ 16- 25 ዓመት የሠራ)</span></th>
+                        <th colspan="2" class="text-danger">ዝቅተኛ<br><span style="font-weight:normal; font-size:9px;">(ከ 26- 35 ዓመት የሠራ)</span></th>
+                        <th colspan="2" class="text-dark bg-secondary bg-opacity-25">በጣም ዝቅተኛ<br><span style="font-weight:normal; font-size:9px;">(ከ 36 ዓመት በላይ የሠራ)</span></th>
+                        
                         <th rowspan="2" class="align-middle">አጠቃላይ<br>ድምር</th>
                     </tr>
-                    <!-- የታችኛው ሄደር (የዓመት ክልል) -->
+                    <!-- የታችኛው ሄደር (ብዛት እና ደረጃ ንዑስ ርዕሶች) -->
                     <tr>
-                        <th>እስከ 5 ዓመት የሠራ</th>
-                        <th>ከ 6- 15 ዓመት የሠራ</th>
-                        <th>ከ 16- 25 ዓመት የሠራ</th>
-                        <th>ከ 26- 35 ዓመት የሠራ</th>
-                        <th>ከ 36 ዓመት በላይ የሠራ</th>
+                        <th class="text-success">ብዛት</th>
+                        <th class="text-success">ደረጃ</th>
+                        
+                        <th class="text-primary">ብዛት</th>
+                        <th class="text-primary">ደረጃ</th>
+                        
+                        <th class="text-warning text-dark">ብዛት</th>
+                        <th class="text-warning text-dark">ደረጃ</th>
+                        
+                        <th class="text-danger">ብዛት</th>
+                        <th class="text-danger">ደረጃ</th>
+                        
+                        <th class="text-dark">ብዛት</th>
+                        <th class="text-dark">ደረጃ</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php 
                     if (!empty($rows)) {
+                        $sortedByVGood = $rows;
+                        usort($sortedByVGood, fn($a, $b) => ($b['years_0_to_5'] ?? 0) - ($a['years_0_to_5'] ?? 0));
+
+                        $sortedByGood = $rows;
+                        usort($sortedByGood, fn($a, $b) => ($b['years_6_to_15'] ?? 0) - ($a['years_6_to_15'] ?? 0));
+
+                        $sortedByMed = $rows;
+                        usort($sortedByMed, fn($a, $b) => ($b['years_16_to_25'] ?? 0) - ($a['years_16_to_25'] ?? 0));
+
+                        $sortedByLow = $rows;
+                        usort($sortedByLow, fn($a, $b) => ($b['years_26_to_35'] ?? 0) - ($a['years_26_to_35'] ?? 0));
+
+                        $sortedByVLow = $rows;
+                        usort($sortedByVLow, fn($a, $b) => ($b['years_36_plus'] ?? 0) - ($a['years_36_plus'] ?? 0));
+
+                        function getRank($item, $sortedList) {
+                            $rank = 1;
+                            foreach ($sortedList as $row) {
+                                if (($row['branch_name'] ?? '') === ($item['branch_name'] ?? '')) {
+                                    return $rank;
+                                }
+                                $rank++;
+                            }
+                            return $rank;
+                        }
+
                         $no = 1;
                         
-                        // የድምር ማከማቻዎች (Totals)
-                        $t_vgood = 0; // በጣም ጥሩ (0-5)
-                        $t_good = 0;  // ጥሩ (6-15)
-                        $t_med = 0;   // መካከለኛ (16-25)
-                        $t_low = 0;   // ዝቅተኛ (26-35)
-                        $t_vlow = 0;  // በጣም ዝቅተኛ (36+)
-                        $t_all_total = 0; // የሁሉም ድምር
+                        $t_vgood = 0; 
+                        $t_good = 0; 
+                        $t_med = 0; 
+                        $t_low = 0; 
+                        $t_vlow = 0; 
+                        $t_all_total = 0;
 
                         foreach ($rows as $row) {
-                            // ከዳታቤዝ የሚመጡት አምዶች ስም እንደዚህ ይሆናል ተብሎ ይታሰባል (በSQL ላይ እናስተካክለዋለን)
                             $vGood = $row['years_0_to_5'] ?? 0;
                             $good  = $row['years_6_to_15'] ?? 0;
                             $med   = $row['years_16_to_25'] ?? 0;
@@ -218,7 +258,6 @@ $colCount = 8; // ተ.ቁ፣ ስም፣ 5 የአገልግሎት ዘመን ስቴ�
                             
                             $rowTotal = $vGood + $good + $med + $low + $vLow;
 
-                            // አጠቃላይ ድምሮችን መደመር
                             $t_vgood += $vGood;
                             $t_good  += $good;
                             $t_med   += $med;
@@ -230,12 +269,27 @@ $colCount = 8; // ተ.ቁ፣ ስም፣ 5 የአገልግሎት ዘመን ስቴ�
                                 <td><?php echo $no++; ?></td>
                                 <td class="text-start fw-bold"><?php echo htmlspecialchars($row['branch_name'] ?? ''); ?></td>
                                 
+                                <!-- በጣም ጥሩ -->
                                 <td class="text-success fw-bold"><?php echo $vGood > 0 ? $vGood : '-'; ?></td>
+                                <td><span class="badge bg-light text-dark border"><?php echo getRank($row, $sortedByVGood); ?></span></td>
+
+                                <!-- ጥሩ -->
                                 <td class="text-primary"><?php echo $good > 0 ? $good : '-'; ?></td>
+                                <td><span class="badge bg-light text-dark border"><?php echo getRank($row, $sortedByGood); ?></span></td>
+
+                                <!-- መካከለኛ -->
                                 <td class="text-warning text-dark"><?php echo $med > 0 ? $med : '-'; ?></td>
+                                <td><span class="badge bg-light text-dark border"><?php echo getRank($row, $sortedByMed); ?></span></td>
+
+                                <!-- ዝቅተኛ -->
                                 <td class="text-danger"><?php echo $low > 0 ? $low : '-'; ?></td>
-                                <td class="text-dark"><?php echo $vLow > 0 ? $vLow : '-'; ?></td>
+                                <td><span class="badge bg-light text-dark border"><?php echo getRank($row, $sortedByLow); ?></span></td>
+
+                                <!-- በጣም ዝቅተኛ -->
+                                <td class="text-dark fw-bold"><?php echo $vLow > 0 ? $vLow : '-'; ?></td>
+                                <td><span class="badge bg-secondary"><?php echo getRank($row, $sortedByVLow); ?></span></td>
                                 
+                                <!-- አጠቃላይ ድምር -->
                                 <td class="fw-bold bg-light"><?php echo $rowTotal > 0 ? $rowTotal : '-'; ?></td>
                             </tr>
                     <?php 
@@ -244,12 +298,12 @@ $colCount = 8; // ተ.ቁ፣ ስም፣ 5 የአገልግሎት ዘመን ስቴ�
                         <!-- ጠቅላላ ድምር (Grand Total) -->
                         <tr class="grand-total fw-bold">
                             <td colspan="2" class="text-end">ጠ/ድምር:</td>
-                            <td class="text-success"><?php echo $t_vgood; ?></td>
-                            <td class="text-primary"><?php echo $t_good; ?></td>
-                            <td class="text-warning text-dark"><?php echo $t_med; ?></td>
-                            <td class="text-danger"><?php echo $t_low; ?></td>
-                            <td class="text-dark"><?php echo $t_vlow; ?></td>
-                            <td><?php echo $t_all_total; ?></td>
+                            <td colspan="2" class="text-success text-center"><?php echo $t_vgood; ?></td>
+                            <td colspan="2" class="text-primary text-center"><?php echo $t_good; ?></td>
+                            <td colspan="2" class="text-warning text-dark text-center"><?php echo $t_med; ?></td>
+                            <td colspan="2" class="text-danger text-center"><?php echo $t_low; ?></td>
+                            <td colspan="2" class="text-dark text-center"><?php echo $t_vlow; ?></td>
+                            <td class="text-center"><?php echo $t_all_total; ?></td>
                         </tr>
                     <?php
                     } else {
@@ -260,20 +314,43 @@ $colCount = 8; // ተ.ቁ፣ ስም፣ 5 የአገልግሎት ዘመን ስቴ�
             </table>
         </div>
 
-        <div class="signature-section">
-            <div class="sig-box">
-                ያዘጋጀው ስም እና ፊርማ
-            </div>
-            <div class="sig-box">
-                ያረጋገጠው ስም እና ፊርማ
-            </div>
-            <div class="sig-box">
-                ያጸደቀው ኃላፊ ስም እና ፊርማ
-            </div>
-        </div>
-
     </div>
 </div>
+
+<!-- ከ nonce ጋር የተዋቀረ የ JavaScript እና ኤክስፖርት ኮድ -->
+<script nonce="<?php echo htmlspecialchars($GLOBALS['nonce'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+document.addEventListener("DOMContentLoaded", function() {
+    const exportBtn = document.getElementById("exportExcelBtn");
+    const printBtn = document.getElementById("printBtn");
+
+    if (exportBtn) {
+        exportBtn.addEventListener("click", function() {
+            let table = document.getElementById("reportTable");
+            if (!table) return;
+            
+            let html = table.outerHTML;
+            let blob = new Blob(['\ufeff' + html], {
+                type: 'application/vnd.ms-excel'
+            });
+            
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = 'Vehicle_Service_Report_<?php echo date('Y-m-d'); ?>.xls';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    if (printBtn) {
+        printBtn.addEventListener("click", function() {
+            window.print();
+        });
+    }
+});
+</script>
 
 </body>
 </html>

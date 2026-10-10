@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 scales: {
                 y: {
                     beginAtZero: true,
-                    suggestedMax: 10, // የቻርቱ ከፍታ ከፍተኛው ቁጥር ካለው ትንሽ ከፍ እንዲል በማድረግ ቁጥሮቹ እንዳይጋረዱ ያደርጋል
+                    suggestedMax: 1000, // የቻርቱ ከፍታ ከፍተኛው ቁጥር ካለው ትንሽ ከፍ እንዲል በማድረግ ቁጥሮቹ እንዳይጋረዱ ያደርጋል
                     ticks: {
                         stepSize: 1
                     }
