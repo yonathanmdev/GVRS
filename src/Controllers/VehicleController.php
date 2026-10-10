@@ -202,7 +202,7 @@ public function carTypesByBrand(): void
         'capacity'          => $capacity,
         'manufactured_year' => $manufactured_year,
         'estimated_price'   => $estimated_price,
-        'purchase_year'     => $purchase_year,
+
         'vehicle_status'    => $vehicle_status,
     ];
 
@@ -248,7 +248,6 @@ public function carTypesByBrand(): void
         ]);
         return;
     }
-
     $orgModel  = new FunctionalOrgModel($this->db);
     $brachData = $orgModel->findById($branchId);
 
@@ -273,7 +272,7 @@ public function carTypesByBrand(): void
         'capacity'          => $capacity,
         'manufactured_year' => $manufactured_year,
         'estimated_price'   => $estimated_price,
-        'purchase_year'     => $purchase_year,
+        'purchase_year'     => $purchase_year ?? null,
         'vehicle_status'    => $vehicle_status,
         'registered_by'     => $userId
     ];
@@ -371,6 +370,62 @@ public function list(): void
         'currentLang'        => $_SESSION['lang'] ?? 'am',
     ]);
 }
+private function getBranchOptions(array $vehicle): array
+{
+    $orgModel = new FunctionalOrgModel($this->db);
+
+    // zone_id set => level-2 woreda or memriya
+    if (!empty($vehicle['zone_id'])) {
+
+        if (($vehicle['branch_type'] ?? null) === 'memriya') {
+            $rows = $orgModel->getAll(2, ['memriya']);
+
+            return array_map(fn($r) => [
+                'id'   => $r['id'],
+                'name' => $r['name'],
+            ], $rows);
+        }
+
+        // zone_id set, not memriya => woreda
+        $adminModel = new AdministrativeUnitModel($this->db);
+        $rows = $adminModel->getWoredasWithZone((int) $vehicle['zone_id'], null, 100, 0);
+
+        return array_map(fn($r) => [
+            'id'   => $r['id'],
+            'name' => $r['woreda_name'],
+        ], $rows);
+    }
+
+    // no zone_id, level 1 => bureau
+    if ((int) ($vehicle['branch_level'] ?? 0) === 1) {
+        $branchTypeRows = $orgModel->getAllBranchTypes();
+        $branchType     = array_column($branchTypeRows, 'type_in_eng');
+        $rows = $orgModel->getAll(1, $branchType);
+
+        return array_map(fn($r) => [
+            'id'   => $r['id'],
+            'name' => $r['name'],
+        ], $rows);
+    }
+
+    // no zone_id, level 2 => institution
+    if ((int) ($vehicle['branch_level'] ?? 0) === 2) {
+        $bureauId = (int) ($vehicle['branch_functional_parent_id'] ?? 0);
+
+        if (!$bureauId) {
+            return [];
+        }
+
+        $rows = $orgModel->getAllAccountableOfficesforSelectedBureau(2, $bureauId);
+
+        return array_map(fn($r) => [
+            'id'   => $r['id'],
+            'name' => $r['office_name'],
+        ], $rows);
+    }
+
+    return [];
+}
 public function editData(): void
 {
     AuthHelper::checkRole(['system_admin', 'officer']);
@@ -399,7 +454,8 @@ public function editData(): void
             $vehicle['zone_name']   ?? null,
         ]);
         $officeLabel = $officeParts ? implode(' / ', $officeParts) : null;
-
+// Same-level branch options for the edit dropdown
+$branchOptions = $this->getBranchOptions($vehicle);
         echo json_encode([
             'success'      => true,
             'vehicle'      => [
@@ -426,6 +482,7 @@ public function editData(): void
 
             ],
             'office_label' => $officeLabel,
+            'branch_options' => $branchOptions,
         ]);
 
     } catch (\Exception $e) {
@@ -454,13 +511,13 @@ public function editData(): void
  
         // --- Required field validation (server-side mirror of the JS) ---
         $required = [
+            'branch_id'         =>'ተቋም ይምረጡ',
             'brand_id'          => 'ብራንድ መምረጥ አለብዎት።',
             'vehicle_type_id'   => 'የተሽከርካሪው/ማሽነሪው ዓይነት መምረጥ አለብዎት።',
             'plate_number'      => 'ሰሌዳ ቁጥር ማስገባት አለብዎት።',
             'capacity'          => 'የመጫን አቅም ማስገባት አለብዎት።',
             'estimated_price'   => 'ግምታዊ ዋጋ ማስገባት አለብዎት።',
             'manufactured_year' => 'የተመረተበትን ዓ.ም ማስገባት አለብዎት።',
-            'purchase_year'     => 'የተገዛበትን ዓ.ም ማስገባት አለብዎት።',
             'vehicle_status'    => 'የአሁኑን ሁኔታ መምረጥ አለብዎት።',
         ];
  
@@ -476,7 +533,7 @@ public function editData(): void
         }
  
         $manufacturedYear = (int) $_POST['manufactured_year'];
-        $purchaseYear     = (int) $_POST['purchase_year'];
+        $purchaseYear     =  $_POST['purchase_year'];
         $currentYear      = (int) date('Y'); // GC, matches the form's max="" attribute
  
         if ($manufacturedYear < 1950 || $manufacturedYear > $currentYear) {
@@ -488,24 +545,27 @@ public function editData(): void
             return;
         }
  
-        if ($purchaseYear < 1950 || $purchaseYear > $currentYear) {
-            http_response_code(422);
-            echo json_encode([
-                'success' => false,
-                'message' => 'የተገዛበት ዓ.ም ትክክል አይደለም።',
-            ]);
-            return;
-        }
- 
-        if ($purchaseYear < $manufacturedYear) {
-            http_response_code(422);
-            echo json_encode([
-                'success' => false,
-                'message' => 'የተገዛበት ዓ.ም ከተመረተበት ዓ.ም በፊት ሊሆን አይችልም።',
-            ]);
-            return;
-        }
- 
+        if ($purchaseYear !== null && $purchaseYear !== '') {
+
+    if ($purchaseYear < 1950 || $purchaseYear > $currentYear) {
+        http_response_code(422);
+        echo json_encode([
+            'success' => false,
+            'message' => 'የተገዛበት ዓ.ም ትክክል አይደለም።',
+        ]);
+        return;
+    }
+
+    if ($manufacturedYear !== null && $manufacturedYear !== '' && $purchaseYear < $manufacturedYear) {
+        http_response_code(422);
+        echo json_encode([
+            'success' => false,
+            'message' => 'የተገዛበት ዓ.ም ከተመረተበት ዓ.ም በፊት ሊሆን አይችልም።',
+        ]);
+        return;
+    }
+
+}
         $estimatedPrice = filter_var(
             $_POST['estimated_price'],
             FILTER_VALIDATE_FLOAT
@@ -519,21 +579,29 @@ public function editData(): void
             ]);
             return;
         }
+        
  
         try {
-            $vehicleModel = new VehicleModel($this->db);
-            $existing = $vehicleModel->findByUuid($uuid);
- 
-            if (!$existing) {
-                http_response_code(404);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'ተሽከርካሪው አልተገኘም',
-                ]);
-                return;
-            }
+           $vehicleModel = new VehicleModel($this->db);
+
+$existing = $vehicleModel->findByUuidWithDetails($uuid); // for branch validation
+
+if (!$existing) {
+    http_response_code(404);
+    echo json_encode(['success' => false, 'message' => 'ተሽከርካሪው አልተገኘም']);
+    return;
+}
+
+$allowedBranches = array_column($this->getBranchOptions($existing), 'id');
+
+if (!in_array((int) $_POST['branch_id'], $allowedBranches, true)) {
+    http_response_code(422);
+    echo json_encode(['success' => false, 'message' => 'የመረጡት ተቋም ተመሳሳይ ደረጃ ላይ አይደለም']);
+    return;
+}
             $newValues = [
                 'uuid'              => $uuid,
+                'branch_id' => (int) $_POST['branch_id'],
                 'vehicle_type'   => (int) $_POST['vehicle_type_id'],
                 'plate_number'      => trim($_POST['plate_number']),
                 'model'             => trim($_POST['model'] ?? ''),
@@ -554,25 +622,40 @@ public function editData(): void
                 http_response_code(500);
                 echo json_encode([
                     'success' => false,
-                    'message' => 'ማዘመን አልተቻለም',
+                    'message' => 'ማስተካከል አልተቻለም',
                 ]);
                 return;
             }
  
-            \App\Helpers\AuditHelper::log(
-                action: 'vehicle_updated',
-                entityType: 'vehicle',
-                entityId: $existing['id'], // internal BIGINT id, not uuid
-                oldValues: $existing,
-                newValues: $newValues,
-                metadata: ['uuid' => $uuid]
-            );
- 
-            echo json_encode([
-                'success' => true,
-                'message' => 'መረጃው በትክክል ተዘምኗል',
-                'vehicle' => array_merge(['uuid' => $uuid], $newValues),
-            ]);
+           $fresh = $vehicleModel->findByUuidWithDetails($uuid);
+
+\App\Helpers\AuditHelper::log(
+    action: 'vehicle_updated',
+    entityType: 'vehicle',
+    entityId: $existing['id'],
+    oldValues: $existing,
+    newValues: $newValues,
+    metadata: ['uuid' => $uuid]
+);
+
+echo json_encode([
+    'success' => true,
+    'message' => 'መረጃው በትክክል ተዘምኗል',
+    'vehicle' => [
+        'uuid'              => $uuid,
+        'plate_number'      => $fresh['plate_number'],
+        'model'             => $fresh['model'],
+        'brand_name'        => $fresh['brand_name'],
+        'type_name'         => $fresh['type_name'],
+        'branch_name'       => $fresh['branch_name'],
+        'zone_name'         => $fresh['zone_name'],
+        'manufactured_year' => $fresh['manufactured_year'],
+        'purchase_year'     => $fresh['purchase_year'],
+        'vehicle_status'    => $fresh['vehicle_status'],
+        'brand_id'          => $fresh['brand_id'],
+        'vehicle_type_id'   => $fresh['vehicle_type'],
+    ],
+]);
         } catch (\Throwable $e) {
             error_log('[VehicleController::update] ' . $e->getMessage());
  

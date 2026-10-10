@@ -20,7 +20,7 @@ class FunctionalOrgController extends BaseController
 
         if (!$userId) {
             $_SESSION['error'] = \__('invalid_login');
-            header("Location: " . $_ENV['BASE_URL'] . "/login");
+            header("Location: " . $_ENV['BASE_URL'] . "/logout");
             exit();
         }
 
