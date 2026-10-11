@@ -193,7 +193,11 @@ public function getDynamicVehicleReport($filters): array
     $typesStmt = $this->db->query("SELECT car_type_id AS id, type_name as cartype FROM view_car_details ORDER BY id ASC");
     $carTypes = $typesStmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // 2. የ SQL ኪዩሪውን መሠረት እንገነባለን
+    // 2. ሬዲዮ በተኑን (report_type) መጀመሪያ እንለያለን
+    $r_type = trim($filters['report_type'] ?? '');
+    $secondSelect = $filters['second_select'] ?? 'all';
+
+    // 3. የ SQL ኪዩሪውን መሠረት እንገነባለን (ለዞን ሲሆን Recursive ጆይን እንጠቀማለን)
     $sql = "SELECT 
         b.id AS branch_id,
         b.uuid AS branch_uuid,
@@ -211,17 +215,32 @@ public function getDynamicVehicleReport($filters): array
         $sql .= ", SUM(CASE WHEN v.vehicle_type = {$typeId} THEN 1 ELSE 0 END) AS vehicle_type_{$typeId}";
     }
 
-    $sql .= " FROM branches b
-              LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1
-              WHERE b.is_active = 1";
+    $sql .= " FROM branches b";
+
+    // ዞን ሲመረጥ ብቻ በስሩ ያሉትን ወረዳዎች እና መምሪያዎች (በ admin_parent_id / ተዋረድ) ጭምር ለመጠቅለል
+    if ($r_type === 'zone') {
+        $sql .= " LEFT JOIN (
+                    WITH RECURSIVE SubBranches AS (
+                        SELECT id, id AS child_id FROM branches WHERE is_active = 1
+                        UNION ALL
+                        SELECT sb.id, br.id AS child_id 
+                        FROM branches br
+                        INNER JOIN SubBranches sb ON br.admin_parent_id = sb.child_id
+                        WHERE br.is_active = 1
+                    )
+                    SELECT * FROM SubBranches
+                 ) sb ON b.id = sb.id
+                 LEFT JOIN vehicles v ON sb.child_id = v.branch_id AND v.is_active = 1";
+    } else {
+        // ለሌሎች የሪፖርት አይነቶች የነበረው መደበኛ ጆይን ሳይለወጥ ይቀጥላል
+        $sql .= " LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1";
+    }
+
+    $sql .= " WHERE b.is_active = 1";
 
     $params = [];
 
-    // 3. ሬዲዮ በተኑ (report_type) የተመረጠ መሆኑን ማረጋገጥ
-    $r_type = trim($filters['report_type'] ?? '');
-    $secondSelect = $filters['second_select'] ?? 'all';
-
-    // ሬዲዮ በተኑ ከተመረጠ ብቻ ማጣሪያውን እንጨምራለን፤ ካልተመረጠ (ባዶ ከሆነ) ይዘለላል (ሁሉንም ያመጣል)
+    // 4. ሬዲዮ በተኑ (report_type) የተመረጠ መሆኑን ማረጋገጥ እና ማጣሪያዎቹን መጨመር
     if ($r_type !== '' && $r_type !== 'all') {
         switch ($r_type) {
             case 'regional': 
@@ -273,18 +292,16 @@ public function getDynamicVehicleReport($filters): array
         }
     }
 
-    // 4. ሌሎች ተጨማሪ ማጣሪያዎች (third_select እና fourth_select)
+    // 5. ሌሎች ተጨማሪ ማጣሪያዎች (third_select እና fourth_select)
     if (!empty($filters['third_select']) && $filters['third_select'] !== 'all') {
         $sql .= " AND b.id = :third_select";
         $params['third_select'] = $filters['third_select'];
     }
 
     if (!empty($filters['fourth_select']) && $filters['fourth_select'] !== 'all') {
-        // የክልል ተጠሪ ሪፖርት ሲሆን አራተኛው ሳጥን የቢሮ ID ስለሚልክ በ b.id እናጣራለን
         if ($r_type === 'regional') {
             $sql .= " AND b.id = :fourth_select";
         } else {
-            // ለሌሎች የሪፖርት አይነቶች branch_type ሆኖ መቀጠል ከፈለገ
             $sql .= " AND b.branch_type = :fourth_select";
         }
         $params['fourth_select'] = $filters['fourth_select'];
@@ -307,9 +324,11 @@ public function getServiceYearReport($filters): array
     // 1. የዘንድሮውን ዓመት እናገኛለን (የተሽከርካሪውን ዕድሜ ለማስላት)
     $currentYear = date('Y');
 
-    // 2. የ SQL ኪዩሪውን መሠረት እንገነባለን
-    // ማስታወሻ፡ በዳታቤዝዎ ውስጥ የተሽከርካሪው የተመረተበት ዓመት የተመዘገበው በ `manufactured_year` ነው ብለን አስበናል። 
-    // የእርስዎ ኮለም ስም የተለየ ከሆነ (ለምሳሌ፡ `model_year` ወይም `purchase_year`) እባክዎ ከታች ባለው ኮድ ላይ ይቀይሩት።
+    // 2. ሬዲዮ በተኑን (report_type) መጀመሪያ እንለያለን
+    $r_type = trim($filters['report_type'] ?? '');
+    $secondSelect = $filters['second_select'] ?? 'all';
+
+    // 3. የ SQL ኪዩሪውን መሠረት እንገነባለን (ለዞን ሲሆን Recursive ጆይን እንጠቀማለን)
     $sql = "SELECT 
         b.id AS branch_id,
         b.uuid AS branch_uuid,
@@ -323,17 +342,32 @@ public function getServiceYearReport($filters): array
         SUM(CASE WHEN ($currentYear - v.manufactured_year) BETWEEN 26 AND 35 THEN 1 ELSE 0 END) AS years_26_to_35,
         SUM(CASE WHEN ($currentYear - v.manufactured_year) >= 36 THEN 1 ELSE 0 END) AS years_36_plus
         
-        FROM branches b
-        LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1
-        WHERE b.is_active = 1";
+        FROM branches b";
+
+    // ዞን ሲመረጥ ብቻ በስሩ ያሉትን ወረዳዎች እና መምሪያዎች (በ admin_parent_id / ተዋረድ) ጭምር ለመጠቅለል
+    if ($r_type === 'zone') {
+        $sql .= " LEFT JOIN (
+                    WITH RECURSIVE SubBranches AS (
+                        SELECT id, id AS child_id FROM branches WHERE is_active = 1
+                        UNION ALL
+                        SELECT sb.id, br.id AS child_id 
+                        FROM branches br
+                        INNER JOIN SubBranches sb ON br.admin_parent_id = sb.child_id
+                        WHERE br.is_active = 1
+                    )
+                    SELECT * FROM SubBranches
+                 ) sb ON b.id = sb.id
+                 LEFT JOIN vehicles v ON sb.child_id = v.branch_id AND v.is_active = 1";
+    } else {
+        // ለሌሎች የሪፖርት አይነቶች የነበረው መደበኛ ጆይን ሳይለወጥ ይቀጥላል
+        $sql .= " LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1";
+    }
+
+    $sql .= " WHERE b.is_active = 1";
 
     $params = [];
 
-    // 3. ሬዲዮ በተኑ (report_type) የተመረጠ መሆኑን ማረጋገጥ
-    $r_type = trim($filters['report_type'] ?? '');
-    $secondSelect = $filters['second_select'] ?? 'all';
-
-    // ሬዲዮ በተኑ ከተመረጠ ብቻ ማጣሪያውን እንጨምራለን፤ ካልተመረጠ (ባዶ ከሆነ) ይዘለላል (ሁሉንም ያመጣል)
+    // 4. ሬዲዮ በተኑ (report_type) የተመረጠ መሆኑን ማረጋገጥ እና ማጣሪያዎቹን መጨመር
     if ($r_type !== '' && $r_type !== 'all') {
         switch ($r_type) {
             case 'regional': 
@@ -385,7 +419,7 @@ public function getServiceYearReport($filters): array
         }
     }
 
-    // 4. ሌሎች ተጨማሪ ማጣሪያዎች (third_select እና fourth_select)
+    // 5. ሌሎች ተጨማሪ ማጣሪያዎች (third_select እና fourth_select)
     if (!empty($filters['third_select']) && $filters['third_select'] !== 'all') {
         $sql .= " AND b.id = :third_select";
         $params['third_select'] = $filters['third_select'];
@@ -487,7 +521,7 @@ public function bureausgraph(?string $id = null): array
             FROM branches b
             LEFT JOIN branch_type bt ON b.branch_type = bt.type_in_eng
             LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1 
-            WHERE b.is_active = 1  
+            WHERE b.is_active = 1 AND b.branch_type!='memriya' 
               AND b.functional_path IS NOT NULL 
               AND b.functional_path != ''
             GROUP BY b.id, b.name, b.branch_type, bt.type_in_am";
@@ -502,7 +536,21 @@ public function bureausgraph(?string $id = null): array
 
 public function zonegraph(): array
 {
-    $sql = "SELECT 
+    $sql = "WITH RECURSIVE SubBranches AS (
+                -- 1. መነሻው እያንዳንዱ ቅርንጫፍ (ዞን፣ ሪጅኦ ወዘተ) ራሱ ነው።
+                SELECT id, id AS child_id, branch_type
+                FROM branches
+                WHERE is_active = 1
+                
+                UNION ALL
+                
+                -- 2. በ recursive በኩል በስሩ ያሉትን ልጆች (Child branches) እንፈልጋለን (በ admin_parent_id ወይም parent ግንኙነት)
+                SELECT sb.id, b.id AS child_id, b.branch_type
+                FROM branches b
+                INNER JOIN SubBranches sb ON b.admin_parent_id = sb.child_id
+                WHERE b.is_active = 1
+            )
+            SELECT 
                 b.id,
                 b.name AS Name, 
                 CASE 
@@ -513,10 +561,13 @@ public function zonegraph(): array
                     WHEN LOWER(TRIM(b.branch_type)) = 'woreda'  THEN 'ወረዳ'
                     ELSE COALESCE(bt.type_in_am, b.branch_type, 'ሌላ')
                 END AS CallerName,
-                COUNT(v.id) AS vehicle_count
+                -- ቆጠራው የሚደረገው በራሱ በዞኑ/ሪጅኦው ስር ባሉ ሁሉም ቅርንጫፎች (memriya, woreda ጨምሮ) ባሉ ተሽከርካሪዎች ድምር ነው።
+                COUNT(DISTINCT v.id) AS vehicle_count
             FROM branches b
             LEFT JOIN branch_type bt ON TRIM(b.branch_type) = TRIM(bt.type_in_eng)
-            LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1
+            -- ዞኑን ወይም ሪጅኦውን ከስሩ ካሉት (memriya, woreda ወዘተ) ጋር እናገናኘዋለን
+            LEFT JOIN SubBranches sb ON b.id = sb.id
+            LEFT JOIN vehicles v ON sb.child_id = v.branch_id AND v.is_active = 1
             WHERE b.is_active = 1 
               AND b.admin_path IS NOT NULL 
               AND b.admin_path != '' 
