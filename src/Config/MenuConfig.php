@@ -129,12 +129,12 @@ class MenuConfig
         [
                 'label' => 'ሪፖርት',
                 'icon'  => 'fas fa-edit',
-               'roles' => ['system_admin','mgmt', 'officer'],
+               'roles' => ['system_admin', 'admin','mgmt', 'officer'],
                 'children' => [
                     [
                         'label' => 'ማየት',
                         'url'   => '/report_view',
-                       'roles' => ['system_admin','mgmt', 'officer'],
+                       'roles' => ['system_admin', 'admin','mgmt', 'officer'],
                     ],
                 ]
             ],

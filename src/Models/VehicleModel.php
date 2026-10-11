@@ -40,7 +40,8 @@ class VehicleModel
             ':capacity'          => $data['capacity'] ?: null,
             ':manufactured_year' => $data['manufactured_year'] !== '' ? (int) $data['manufactured_year'] : null,
             ':estimated_price'   => $data['estimated_price'] !== '' ? (float) $data['estimated_price'] : null,
-            ':purchase_year'     => $data['purchase_year'] !== '' ? (int) $data['purchase_year'] : null,
+           ':purchase_year' => ($data['purchase_year'] === null || $data['purchase_year'] === '') 
+    ? null : (int) $data['purchase_year'],
             ':vehicle_status'    => $data['vehicle_status'] ?: null,
             ':registered_by'     => $data['registered_by']
         ]);
@@ -210,7 +211,7 @@ public function countRegisteredVehicles(
         $sql = "SELECT DISTINCT brand_name, brand_id
                 FROM view_car_details
                 WHERE is_deleted=0
-                ORDER BY brand_name ASC";
+                ORDER BY brand_id ASC";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
@@ -289,6 +290,7 @@ public function findByUuidWithDetails(string $uuid): ?array
                 ctl.cartype   AS type_name,
 
                 br.name       AS branch_name,
+                br.level      AS branch_level,
                 z.name        AS zone_name
 
             FROM vehicles v
@@ -324,6 +326,7 @@ public function updateByUuid(array $data): bool
 
 
         $sql = "UPDATE vehicles SET
+                    branch_id         =:branch_id,
                     plate_number      = :plate_number,
                     vehicle_type      = :vehicle_type,
                     model             = :model,
@@ -336,12 +339,12 @@ public function updateByUuid(array $data): bool
                     vehicle_status    = :vehicle_status,
                     updated_by        = :updated_by,
                     updated_at        = :updated_at
-                WHERE branch_id = :branch_id
-                  AND id = :id";
+                WHERE id = :id";
 
         $stmt = $this->db->prepare($sql);
 
         $stmt->execute([
+            ':branch_id'        =>$data['branch_id'],
             ':plate_number'      => $data['plate_number'],
             ':vehicle_type'      => $data['vehicle_type'],
             ':model'             => $data['model'],
@@ -350,11 +353,11 @@ public function updateByUuid(array $data): bool
             ':capacity'          => $data['capacity'],
             ':manufactured_year' => $data['manufactured_year'],
             ':estimated_price'   => $data['estimated_price'],
-            ':purchase_year'     => $data['purchase_year'],
+            ':purchase_year' => ($data['purchase_year'] === null || $data['purchase_year'] === '') 
+    ? null : (int) $data['purchase_year'],
             ':vehicle_status'    => $data['vehicle_status'],
             ':updated_by'        => $data['updated_by'],
             ':updated_at'        => date('Y-m-d H:i:s'),
-            ':branch_id'         => $vehicle['branch_id'],
             ':id'                => $vehicle['id'],
         ]);
 

@@ -572,48 +572,10 @@
             <!-- =================================================
                  BODY
                  ================================================= -->
+            <!-- =================================================
+                 BODY
+                 ================================================= -->
             <div class="modal-body">
-
-                <!-- =============================================
-                     CURRENT OFFICE
-                     ============================================= -->
-                <div class="vehicle-section"
-                     style="border-left-color:#f6c23e;">
-
-                    <div class="vehicle-section-title">
-
-                        <div class="vehicle-section-title-main">
-
-                            <i class="fas fa-building"></i>
-
-                            <span>
-                                የተመዘገበበት ተቋም
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                    <p class="mb-1">
-                        <strong id="edit-current-office">
-                            —
-                        </strong>
-                    </p>
-
-                    <div class="field-hint"
-                         style="color:#9b7412;">
-
-                        <i class="fas fa-exclamation-triangle mr-1"></i>
-
-                        ተቋሙ/ዞኑ/ወረዳው የተሳሳተ ከሆነ፣
-                        እዚህ ላይ ማስተካከል አይቻልም።
-                        ይህን ተሽከርካሪ ሰርዘው
-                        በትክክለኛው ተቋም ስር እንደገና ይመዝግቡት።
-
-                    </div>
-
-                </div>
-
 
                 <!-- =============================================
                      FORM
@@ -626,6 +588,56 @@
                            id="edit_vehicle_id"
                            name="id"
                            value="">
+
+                    <!-- =====================================
+                         REGISTERED OFFICE (editable, same-level only)
+                         ===================================== -->
+                    <div class="vehicle-section"
+                         style="border-left-color:#f6c23e;">
+
+                        <div class="vehicle-section-title">
+
+                            <div class="vehicle-section-title-main">
+
+                                <i class="fas fa-building"></i>
+
+                                <span>
+                                    የተመዘገበበት ተቋም
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                        <div class="form-group mb-1">
+
+                            <select
+                                class="form-control"
+                                id="edit_branch_id"
+                                name="branch_id"
+                                required>
+
+                                <option value="" selected disabled>
+                                    ይምረጡ
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="field-hint"
+                             style="color:#9b7412;">
+
+                            <i class="fas fa-exclamation-triangle mr-1"></i>
+
+                            ተቋሙን መቀየር የሚችሉት ተመሳሳይ ደረጃ ካላቸው
+                            ተቋማት ውስጥ ብቻ ነው። ትክክለኛው ተቋም
+                            በዝርዝሩ ውስጥ ከሌለ፣ ይህን ተሽከርካሪ ሰርዘው
+                            በትክክለኛው ተቋም ስር እንደገና ይመዝግቡት።
+
+                        </div>
+
+                    </div>
 
 
                     <fieldset id="vehicle-edit-fields">
@@ -944,10 +956,6 @@
 
                                         የተገዛበት ዓ.ም(GC)
 
-                                        <span class="required-mark">
-                                            *
-                                        </span>
-
                                     </label>
 
                                     <input
@@ -956,8 +964,7 @@
                                         name="purchase_year"
                                         id="edit_purchase_year"
                                         min="1950"
-                                        max="<?= date('Y') ?>"
-                                        required>
+                                        max="<?= date('Y') ?>">
 
                                 </div>
 
@@ -1347,10 +1354,39 @@ document.addEventListener('DOMContentLoaded', function () {
                     vehicleId;
 
 
-                document.getElementById(
-                    'edit-current-office'
-                ).textContent =
-                    data.office_label || '—';
+               document.getElementById(
+    'edit_vehicle_id'
+).value =
+    vehicleId;
+
+
+// REPLACE THIS BLOCK:
+// document.getElementById(
+//     'edit-current-office'
+// ).textContent =
+//     data.office_label || '—';
+
+// WITH THIS:
+const branchSelect =
+    document.getElementById('edit_branch_id');
+
+branchSelect.innerHTML = '';
+
+(data.branch_options || []).forEach(function (b) {
+
+    const opt = document.createElement('option');
+
+    opt.value = b.id;
+    opt.textContent = b.name;
+
+    if (String(b.id) === String(v.branch_id)) {
+        opt.selected = true;
+    }
+
+    branchSelect.appendChild(opt);
+
+});
+
 
 
                 document.getElementById(
@@ -1525,6 +1561,10 @@ editForm.addEventListener(
 
         const requiredFields = [
             {
+                element: document.getElementById('edit_branch_id'),
+                message: 'የተሽከርካሪውን/ማሽነሪውን ተቋም መምረጥ አለብዎት።'
+            },
+            {
                 element: document.getElementById('edit_plate_number'),
                 message: 'ሰሌዳ ቁጥር ማስገባት አለብዎት።'
             },
@@ -1547,10 +1587,6 @@ editForm.addEventListener(
             {
                 element: document.getElementById('edit_estimated_price'),
                 message: 'ግምታዊ ዋጋ ማስገባት አለብዎት።'
-            },
-            {
-                element: document.getElementById('edit_purchase_year'),
-                message: 'የተገዛበትን ዓ.ም ማስገባት አለብዎት።'
             },
             {
                 element: document.getElementById('edit_vehicle_status'),

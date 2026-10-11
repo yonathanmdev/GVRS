@@ -1855,7 +1855,6 @@ $is_vehicle_page = true;
 
                                                     <label>
                                                         የተገዛበት ዓ.ም (GC)
-                                                         <span class="required-mark">*</span>
                                                     </label>
 
                                                     <input type="number"
@@ -1864,7 +1863,7 @@ $is_vehicle_page = true;
                                                            id="purchase_year"
                                                            min="1950"
                                                           max="<?php echo date('Y'); ?>"
-                                                           placeholder="ዓ.ም" required>
+                                                           placeholder="ዓ.ም">
 
                                                 </div>
 
