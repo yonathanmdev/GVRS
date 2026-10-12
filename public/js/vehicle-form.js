@@ -213,7 +213,7 @@
         }
     }
 
-   memriyaSelect.addEventListener('change', function () {
+memriyaSelect.addEventListener('change', function () {
     if (this.value) {
         memriyaZoneSelect.style.display = '';
         memriyaZoneLabel.style.display = '';
