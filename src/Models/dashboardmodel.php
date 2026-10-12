@@ -218,20 +218,20 @@ public function getDynamicVehicleReport($filters): array
     $sql .= " FROM branches b";
 
     // ዞን ሲመረጥ ብቻ በስሩ ያሉትን ወረዳዎች እና መምሪያዎች (በ admin_parent_id / ተዋረድ) ጭምር ለመጠቅለል
-    if ($r_type === 'zone') {
-        $sql .= " LEFT JOIN (
-                    WITH RECURSIVE SubBranches AS (
-                        SELECT id, id AS child_id FROM branches WHERE is_active = 1
-                        UNION ALL
-                        SELECT sb.id, br.id AS child_id 
-                        FROM branches br
-                        INNER JOIN SubBranches sb ON br.admin_parent_id = sb.child_id
-                        WHERE br.is_active = 1
+if ($r_type === 'zone') {
+    $sql .= " LEFT JOIN vehicles v ON (
+                v.zone_id = b.id 
+                OR v.branch_id IN (
+                    SELECT id FROM branches 
+                    WHERE is_active = 1 AND (
+                        id = b.id 
+                        OR admin_parent_id = b.id 
+                        OR functional_parent_id = b.id
+                        OR admin_path LIKE CONCAT(b.admin_path, '/%')
                     )
-                    SELECT * FROM SubBranches
-                 ) sb ON b.id = sb.id
-                 LEFT JOIN vehicles v ON sb.child_id = v.branch_id AND v.is_active = 1";
-    } else {
+                )
+              ) AND v.is_active = 1";
+}else {
         // ለሌሎች የሪፖርት አይነቶች የነበረው መደበኛ ጆይን ሳይለወጥ ይቀጥላል
         $sql .= " LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1";
     }
@@ -328,7 +328,7 @@ public function getServiceYearReport($filters): array
     $r_type = trim($filters['report_type'] ?? '');
     $secondSelect = $filters['second_select'] ?? 'all';
 
-    // 3. የ SQL ኪዩሪውን መሠረት እንገነባለን (ለዞን ሲሆን Recursive ጆይን እንጠቀማለን)
+    // 3. የ SQL ኪዩሪውን መሠረት እንገነባለን
     $sql = "SELECT 
         b.id AS branch_id,
         b.uuid AS branch_uuid,
@@ -344,22 +344,22 @@ public function getServiceYearReport($filters): array
         
         FROM branches b";
 
-    // ዞን ሲመረጥ ብቻ በስሩ ያሉትን ወረዳዎች እና መምሪያዎች (በ admin_parent_id / ተዋረድ) ጭምር ለመጠቅለል
+    // ዞን ሲመረጥ በዞኑ ስር ያሉትን ቅርንጫፎች፣ መምሪያዎች እና ወረዳዎች በ v.zone_id እና በ branch_id አማካኝነት በአንድ ላይ እንይዛለን
     if ($r_type === 'zone') {
-        $sql .= " LEFT JOIN (
-                    WITH RECURSIVE SubBranches AS (
-                        SELECT id, id AS child_id FROM branches WHERE is_active = 1
-                        UNION ALL
-                        SELECT sb.id, br.id AS child_id 
-                        FROM branches br
-                        INNER JOIN SubBranches sb ON br.admin_parent_id = sb.child_id
-                        WHERE br.is_active = 1
+        $sql .= " LEFT JOIN vehicles v ON (
+                    v.zone_id = b.id 
+                    OR v.branch_id IN (
+                        SELECT id FROM branches 
+                        WHERE is_active = 1 AND (
+                            id = b.id 
+                            OR admin_parent_id = b.id 
+                            OR functional_parent_id = b.id
+                            OR admin_path LIKE CONCAT(b.admin_path, '/%')
+                        )
                     )
-                    SELECT * FROM SubBranches
-                 ) sb ON b.id = sb.id
-                 LEFT JOIN vehicles v ON sb.child_id = v.branch_id AND v.is_active = 1";
+                  ) AND v.is_active = 1";
     } else {
-        // ለሌሎች የሪፖርት አይነቶች የነበረው መደበኛ ጆይን ሳይለወጥ ይቀጥላል
+        // ለሌሎች የሪፖርት አይነቶች የነበረው መደበኛ ጆይን ይቀጥላል
         $sql .= " LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1";
     }
 
@@ -436,7 +436,6 @@ public function getServiceYearReport($filters): array
     $stmt = $this->db->prepare($sql);
     $stmt->execute($params);
     
-    // ለ report2_view በቀጥታ የሚነበበውን ዳታ እንመልሳለን
     return [
         'report_data' => $stmt->fetchAll(PDO::FETCH_ASSOC)
     ];
