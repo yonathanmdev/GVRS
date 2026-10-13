@@ -869,7 +869,14 @@ $isFilterActive = $selectedCategory !== '' || !empty($selectedBranch);
 
                 <!-- Table -->
                 <div class="table-responsive">
-
+<a class="btn btn-success"
+   href="<?= rtrim($_ENV['BASE_URL'], '/') . '/vehicles-export?' . http_build_query([
+       'category'  => $selectedCategory,
+       'branch_id' => $selectedBranch,
+       'search'    => $search,
+   ]) ?>">
+    Export to Excel
+</a>
                     <table
                         id="example1"
                         data-empty-msg="ምንም የተመዘገበ ተሽከርካሪ /ማሽነሪ የለም።"

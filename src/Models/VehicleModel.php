@@ -55,11 +55,12 @@ class VehicleModel
 }
 public function getRegisteredVehicles(
     $branchId = null,
-    int $limit = 25,
+    ?int $limit = 25,              // CHANGED: nullable
     int $offset = 0,
     string $search = '',
     ?int $level = null,
-    ?array $branchTypes = null
+    ?array $branchTypes = null,
+    bool $groupByBranch = false 
 ): array {
 
     $params = [];
@@ -74,23 +75,11 @@ public function getRegisteredVehicles(
     }
 
     $sql = "SELECT 
-                v.id,
-                v.uuid,
-                v.branch_id,
-                v.zone_id,
-                v.plate_number,
-                v.vehicle_type,
-                v.model,
-                v.chassis_number,
-                v.engine_number,
-                v.capacity,
-                v.manufactured_year,
-                v.estimated_price,
-                v.purchase_year,
-                v.vehicle_status,
-                v.is_active,
-                v.registered_by,
-                v.created_at,
+                v.id, v.uuid, v.branch_id, v.zone_id, v.plate_number,
+                v.vehicle_type, v.model, v.chassis_number, v.engine_number,
+                v.capacity, v.manufactured_year, v.estimated_price,
+                v.purchase_year, v.vehicle_status, v.is_active,
+                v.registered_by, v.created_at,
 
                 b.brand_name,
                 ctl.cartype   AS type_name,
@@ -120,10 +109,11 @@ public function getRegisteredVehicles(
                 ctl.cartype      LIKE :search6 OR
                 br.name          LIKE :search7 OR
                 z.name           LIKE :search8
-
             )" : "") . "
-            ORDER BY v.created_at DESC
-            LIMIT :lim OFFSET :offs";
+        ORDER BY " . ($groupByBranch
+                ? "br.name ASC, v.branch_id ASC, z.name ASC, v.created_at DESC"
+                : "v.created_at DESC") .
+            ($limit !== null ? " LIMIT :lim OFFSET :offs" : "");   // CHANGED
 
     $stmt = $this->db->prepare($sql);
 
@@ -142,13 +132,24 @@ public function getRegisteredVehicles(
             $stmt->bindValue(":search{$i}", $term, \PDO::PARAM_STR);
         }
     }
-    $stmt->bindValue(':lim', $limit, \PDO::PARAM_INT);
-    $stmt->bindValue(':offs', $offset, \PDO::PARAM_INT);
+    if ($limit !== null) {                                          // CHANGED
+        $stmt->bindValue(':lim', $limit, \PDO::PARAM_INT);
+        $stmt->bindValue(':offs', $offset, \PDO::PARAM_INT);
+    }
     $stmt->execute();
 
     return $stmt->fetchAll(\PDO::FETCH_ASSOC);
 }
 
+// NEW: used by the Excel export (no limit)
+public function getAllRegisteredVehicles(
+    $branchId = null,
+    string $search = '',
+    ?int $level = null,
+    ?array $branchTypes = null
+): array {
+    return $this->getRegisteredVehicles($branchId, null, 0, $search, $level, $branchTypes, true);
+}
 public function countRegisteredVehicles(
     $branchId = null,
     string $search = '',

@@ -54,6 +54,7 @@ return [
     'vehicles-car-types'            => ['VehicleController', 'carTypesByBrand', true],
     'vehicles-store'      => ['VehicleController', 'store', true],
     'vehicles-list'       => ['VehicleController', 'list', true],
+    'vehicles-export'   => ['VehicleController', 'export', true],
     'vehicles-edit-data'                  => ['VehicleController', 'editData', true],
     'vehicle-update'                  => ['VehicleController', 'update', true],
     'delete-vehicle-process'          => ['VehicleController', 'purge', true],
