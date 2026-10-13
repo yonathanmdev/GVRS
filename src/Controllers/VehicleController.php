@@ -7,7 +7,11 @@ use App\Helpers\AuthHelper;
 use App\Helpers\Csrf;
 use App\Models\VehicleModel;
 use Ramsey\Uuid\Uuid;
-
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 class VehicleController extends BaseController
 {
     public function index()
@@ -369,6 +373,133 @@ public function list(): void
         'totalCount'         => $totalCount,
         'currentLang'        => $_SESSION['lang'] ?? 'am',
     ]);
+}
+
+private function resolveCategory(string $selectedCategory): array
+{
+    $functionModel = new FunctionalOrgModel($this->db);
+    $allTypes = array_column($functionModel->getAllBranchTypes(), 'type_in_eng');
+
+    $categoryConfig = [
+        'regional'    => ['level' => 1, 'types' => $allTypes],
+        'institution' => ['level' => 2, 'types' => array_values(array_diff($allTypes, ['memriya']))],
+        'department'  => ['level' => 2, 'types' => array_values(array_intersect($allTypes, ['memriya']))],
+        'woreda'      => ['level' => 2, 'types' => ['woreda', 'ketema_woreda', 'kifle_ketema']],
+    ];
+
+    return $categoryConfig[$selectedCategory] ?? ['level' => null, 'types' => null];
+}
+public function export(): void
+{
+    AuthHelper::checkRole(['system_admin', 'mgmt', 'officer']);
+
+    set_time_limit(0);
+    ini_set('memory_limit', '512M');
+
+    $search           = trim($_GET['search'] ?? '');
+    $branchId         = !empty($_GET['branch_id']) ? (int) $_GET['branch_id'] : null;
+    $selectedCategory = trim($_GET['category'] ?? '');
+
+    $config   = $this->resolveCategory($selectedCategory);
+    $vehicles = (new VehicleModel($this->db))->getAllRegisteredVehicles(
+        $branchId, $search, $config['level'], $config['types']
+    );
+
+    $statusLabels = [
+        'active'         => 'በአካል ያለ',
+        'lost'           => 'የጠፋ',
+        'destroyed'      => 'የወደመ',
+        'disposed'       => 'የተወገደ',
+        'out_of_service' => 'በብልሽት የቆመ',
+    ];
+
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+    $sheet->setTitle('Vehicles');
+
+    $headers = [
+        '#',                                  // 1
+        'የሚገኝበት መስሪያቤት',                    // 2
+        'ዞን/ከተማ',                             // 3
+        'ሰሌዳ ቁጥር',                            // 4
+        'ብራንድ',                               // 5
+        'የተሽከርካሪው/ ማሽነሪው ዓይነት',            // 6
+        'ሞዴል',                                // 7
+        'ቻንሲ ቁጥር',                            // 8
+        'የሞተር ቁጥር',                           // 9
+        'የመጫን አቅም',                           // 10
+        'የተመረተበት ዓ.ም (GC)',                  // 11
+        'የተገዛበት ዓ.ም (GC)',                   // 12
+        'ተሽከርካሪ/ማሽነሪ ግምታዊ ዋጋ',             // 13
+        'አሁናዊ ሁኔታ',                           // 14
+    ];
+
+    foreach ($headers as $i => $h) {
+        $sheet->setCellValue([$i + 1, 1], $h);
+    }
+    $lastCol = Coordinate::stringFromColumnIndex(count($headers));
+    $sheet->getStyle("A1:{$lastCol}1")->getFont()->setBold(true);
+    $sheet->getStyle("A1:{$lastCol}1")->getFill()
+          ->setFillType(Fill::FILL_SOLID)
+          ->getStartColor()->setRGB('D9E1F2');
+    $sheet->freezePane('A2');
+
+    $row        = 2;
+    $lastBranch = null;
+    $counter    = 0;
+
+    foreach ($vehicles as $v) {
+
+        // Branch heading row whenever the branch changes
+        if ($lastBranch !== $v['branch_id']) {
+            $lastBranch = $v['branch_id'];
+            $counter    = 0;
+
+            $sheet->setCellValue([1, $row], $v['branch_name'] ?? '');
+            $sheet->mergeCells("A{$row}:{$lastCol}{$row}");
+            $sheet->getStyle("A{$row}:{$lastCol}{$row}")->getFont()->setBold(true);
+            $sheet->getStyle("A{$row}:{$lastCol}{$row}")->getFill()
+                  ->setFillType(Fill::FILL_SOLID)
+                  ->getStartColor()->setRGB('FFF2CC');
+            $row++;
+        }
+
+        $counter++;
+        $sheet->setCellValue([1, $row], $counter);
+        $sheet->setCellValue([2, $row], $v['branch_name']);
+        $sheet->setCellValue([3, $row], $v['zone_name']);
+
+        // Text columns so long numbers never turn into 1.23E+15
+        $sheet->setCellValueExplicit([4, $row], (string) $v['plate_number'],   DataType::TYPE_STRING);
+        $sheet->setCellValue([5, $row], $v['brand_name']);
+        $sheet->setCellValue([6, $row], $v['type_name']);
+        $sheet->setCellValue([7, $row], $v['model']);
+        $sheet->setCellValueExplicit([8, $row], (string) $v['chassis_number'], DataType::TYPE_STRING);
+        $sheet->setCellValueExplicit([9, $row], (string) $v['engine_number'],  DataType::TYPE_STRING);
+
+        $sheet->setCellValue([10, $row], $v['capacity']);
+        $sheet->setCellValue([11, $row], $v['manufactured_year']);
+        $sheet->setCellValue([12, $row], $v['purchase_year']);
+        $sheet->setCellValue([13, $row], $v['estimated_price']);
+        $sheet->setCellValue([14, $row], $statusLabels[$v['vehicle_status']] ?? $v['vehicle_status']);
+        $row++;
+    }
+
+    foreach (range(1, count($headers)) as $col) {
+        $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($col))->setAutoSize(true);
+    }
+
+    $filename = 'vehicles_' . date('Y-m-d_His') . '.xlsx';
+
+    if (ob_get_length()) {
+        ob_end_clean();
+    }
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Cache-Control: max-age=0');
+
+    (new Xlsx($spreadsheet))->save('php://output');
+    exit;
 }
 private function getBranchOptions(array $vehicle): array
 {
