@@ -371,7 +371,7 @@ $reportRoutes = array_map(function ($r) { return $r['route']; }, $reportViews);
                             <option value="">-- ምረጡ --</option>
                             <?php 
                                 $allLabel = '-- የሁሉንም በአንድ ላይ --';
-                                if ($r_type == 'wereda') $allLabel = '-- የሁሉንም ወረዳዎች --';
+                                if ($r_type == 'wereda') $allLabel = '-- የሁሉንም ዞኖች --';
                                 elseif ($r_type == 'zone') $allLabel = '-- የሁሉንም ዞኖች --';
                                 elseif ($r_type == 'department') $allLabel = '-- የሁሉንም መምሪያዎች --';
                                 elseif ($r_type == 'agency') $allLabel = '-- የሁሉንም ተጠሪ ተቋማት --';

@@ -264,5 +264,50 @@ function myAsset($path) {
     error:   <?php echo json_encode($_SESSION['error']   ?? null); ?>
   };
   <?php unset($_SESSION['success'], $_SESSION['error']); ?>
+
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const loader = document.getElementById('rfGlobalLoader');
+    if (!loader) return;
+
+    // 1. Listen to any form submission globally
+    document.addEventListener('submit', function (e) {
+        // If form is not cancelled/prevented, show loader
+        if (!e.defaultPrevented) {
+            loader.classList.add('active');
+        }
+    });
+
+    // 2. Listen to sidebar and regular link navigation clicks
+    document.addEventListener('click', function (e) {
+        const link = e.target.closest('a');
+        if (!link) return;
+
+        const href = link.getAttribute('href');
+        const target = link.getAttribute('target');
+
+        // Skip links that are anchors (#), javascript voids, or open in a new tab (_blank)
+        if (
+            !href || 
+            href.startsWith('#') || 
+            href.startsWith('javascript:') || 
+            target === '_blank' ||
+            e.metaKey || 
+            e.ctrlKey || 
+            e.shiftKey || 
+            e.altKey
+        ) {
+            return;
+        }
+
+        // Show global loader for normal page navigation (including sidebar links)
+        loader.classList.add('active');
+    });
+
+    // Hide loader if page is restored from browser back/forward cache
+    window.addEventListener('pageshow', function () {
+        loader.classList.remove('active');
+    });
+});
 </script>
 <script src="<?= myAsset('js/toast.js') ?>"></script>
