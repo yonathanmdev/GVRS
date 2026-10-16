@@ -38,12 +38,17 @@
   <link rel="stylesheet" href="dist/css/adminlte.min.css">
    <link rel="stylesheet" href="css/delete.css">
    <link rel="stylesheet" href="css/custom-search.css">
+     <link rel="stylesheet" href="css/spinner.css">
    <script nonce="<?php echo $GLOBALS['nonce']; ?>">
     window.BASE_URL = "<?= rtrim($_ENV['BASE_URL'], '/') ?>";
 </script>
 
 </head>
 <body class="hold-transition sidebar-mini">
+  <div id="rfGlobalLoader" class="rf-global-loader">
+    <div class="rf-spinner-box"></div>
+    <div class="rf-loader-text">እባክዎ ትንሽ ይጠብቁ...</div>
+</div>
 <div class="wrapper">
   <!-- Navbar -->
   <?php include_once 'navbar.php'; ?>

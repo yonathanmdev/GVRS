@@ -223,26 +223,26 @@ public function getDynamicVehicleReport($filters): array
    // 🌟 4. የዞን ሪፖርት ሲመረጥ ከንዑስ ማጣሪያው ጋር የተጣጣመ የ JOIN ሎጂክ
     if ($r_type === 'zone') {
         if ($zoneSubFilter === 'memriya_only') {
-            $sql .= " INNER JOIN vehicles v ON v.branch_id = b.id AND v.is_active = 1";
+            $sql .= " LEFT JOIN vehicles v ON v.branch_id = b.id AND v.is_active = 1";
         } 
         elseif ($zoneSubFilter === 'wereda_only') {
-            $sql .= " INNER JOIN vehicles v ON v.branch_id = b.id AND v.is_active = 1";
+            $sql .= " LEFT JOIN vehicles v ON v.branch_id = b.id AND v.is_active = 1";
         } 
         else {
             // ሁሉም ሲመረጥ ከዞን ID ጋር በቀጥታ እንዲያያዝ
-            $sql .= " INNER JOIN vehicles v ON v.zone_id = b.id AND v.is_active = 1";
+            $sql .= " LEFT JOIN vehicles v ON v.zone_id = b.id AND v.is_active = 1";
         }
     }
     else if ($r_type === 'department') {
         if (!empty($thirdSelect) && $thirdSelect !== 'all') {
-            $sql .= " INNER JOIN vehicles v ON v.branch_id = b.id AND v.is_active = 1 AND v.zone_id = :third_select_zone";
+            $sql .= " LEFT JOIN vehicles v ON v.branch_id = b.id AND v.is_active = 1 AND v.zone_id = :third_select_zone";
             $params['third_select_zone'] = $thirdSelect;
         } else {
-            $sql .= " INNER JOIN vehicles v ON v.branch_id = b.id AND v.is_active = 1";
+            $sql .= " LEFT JOIN vehicles v ON v.branch_id = b.id AND v.is_active = 1";
         }
     } 
     else {
-        $sql .= " INNER JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1";
+        $sql .= " LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1";
     }
 
     if ($r_type === 'department') {
@@ -337,7 +337,6 @@ public function getDynamicVehicleReport($filters): array
     ];
 }
 
-
 public function getServiceYearReport($filters): array
 {
     // 1. የዘንድሮውን ዓመት እናገኛለን (የተሽከርካሪውን ዕድሜ ለማስላት)
@@ -345,9 +344,10 @@ public function getServiceYearReport($filters): array
 
     // 2. ማጣሪያዎችን እንለያለን
     $r_type = trim($filters['report_type'] ?? '');
-    $secondSelect = $filters['second_select'] ?? 'all';
-    $thirdSelect = $filters['third_select'] ?? 'all';
-    $fourthSelect = $filters['fourth_select'] ?? 'all';
+    $secondSelect = $filters['second_select'];
+    $thirdSelect = $filters['third_select'];
+    $fourthSelect = $filters['fourth_select'] ?? null;
+    $zoneSubFilter = $filters['zone_sub_filter']; // የዞን ንዑስ ማጣሪያ
 
     // 3. የ SQL ኪዩሪውን መሠረት እንገነባለን
     $sql = "SELECT 
@@ -367,31 +367,29 @@ public function getServiceYearReport($filters): array
 
     $params = [];
 
-    // 🌟 1. የዞኑ ኬዝ (እንደ ሪፖርት 1)
+    // 🌟 4. የዞን ሪፖርት ሲመረጥ ከንዑስ ማጣሪያው ጋር የተጣጣመ የ JOIN ሎጂክ
     if ($r_type === 'zone') {
-        $sql .= " LEFT JOIN vehicles v ON (
-                    v.zone_id = b.id 
-                    OR v.branch_id IN (
-                        SELECT id FROM branches 
-                        WHERE is_active = 1 AND (
-                            id = b.id 
-                            OR admin_parent_id = b.id 
-                            OR functional_parent_id = b.id
-                            OR admin_path LIKE CONCAT(b.admin_path, '/%')
-                        )
-                    )
-                  ) AND v.is_active = 1";
+        if ($zoneSubFilter === 'memriya_only') {
+            $sql .= " LEFT JOIN vehicles v ON v.branch_id = b.id AND v.is_active = 1";
+        } 
+        elseif ($zoneSubFilter === 'wereda_only') {
+            $sql .= " LEFT JOIN vehicles v ON v.branch_id = b.id AND v.is_active = 1";
+        } 
+        else {
+            // ሁሉም ሲመረጥ ከዞን ID ጋር በቀጥታ እንዲያያዝ
+            $sql .= " LEFT JOIN vehicles v ON v.zone_id = b.id AND v.is_active = 1";
+        }
     } 
-    // 🌟 2. ለ መምሪያ (department) ሪፖርት
+    // 🌟 5. ለ መምሪያ (department) ሪፖርት
     else if ($r_type === 'department') {
         if (!empty($thirdSelect) && $thirdSelect !== 'all') {
-            $sql .= " INNER JOIN vehicles v ON v.branch_id = b.id AND v.is_active = 1 AND v.zone_id = :third_select_zone";
+            $sql .= " LEFT JOIN vehicles v ON v.branch_id = b.id AND v.is_active = 1 AND v.zone_id = :third_select_zone";
             $params['third_select_zone'] = $thirdSelect;
         } else {
             $sql .= " LEFT JOIN vehicles v ON v.branch_id = b.id AND v.is_active = 1";
         }
     } 
-    // 🌟 3. ለሌሎች የሪፖርት አይነቶች መደበኛ ጆይን
+    // 🌟 6. ለሌሎች የሪፖርት አይነቶች መደበኛ ጆይን
     else {
         $sql .= " LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1";
     }
@@ -403,7 +401,7 @@ public function getServiceYearReport($filters): array
         $sql .= " WHERE b.is_active = 1";
     }
 
-    // 4. ማጣሪያዎችን በቅደም ተከተል መለየት
+    // 7. ማጣሪያዎችን በቅደም ተከተል መለየት
     if ($r_type !== '' && $r_type !== 'all') {
         switch ($r_type) {
             case 'regional': 
@@ -419,10 +417,12 @@ public function getServiceYearReport($filters): array
                     $params['sec_parent'] = $secondSelect;
                     $params['sec_path_id'] = $secondSelect;
                 }
+                elseif ($secondSelect === 'all') {
+                    $sql .= " AND b.level = '1'";
+                }
                 break;
 
-           case 'agency': 
-                // 🌟 የቢሮውን (የዋናውን መሥሪያ ቤት) ቁጥር ሳይጨምር፣ መምሪያ ያልሆኑ እና ራሳቸውን የቻሉ ተጠሪ ተቋማት ብቻ
+            case 'agency': 
                 $sql .= " AND b.branch_type != 'memriya' AND b.functional_parent_id IS NOT NULL AND (b.functional_path IS NOT NULL AND b.functional_path != '')";
                 if ($secondSelect !== 'all' && $secondSelect !== '') {
                     $sql .= " AND (b.id = :second_select OR b.functional_parent_id = :second_select)";
@@ -439,10 +439,23 @@ public function getServiceYearReport($filters): array
                 break;
 
             case 'zone': 
-                $sql .= " AND b.level = 1 AND b.admin_path IS NOT NULL AND b.admin_path != ''";
+                if ($zoneSubFilter === 'memriya_only') {
+                    // መምሪያ ብቻ
+                    $sql .= " AND b.level = 2 AND b.branch_type = 'memriya'";
+                } 
+                elseif ($zoneSubFilter === 'wereda_only') {
+                    // ወረዳ ብቻ
+                    $sql .= " AND b.level = 2 AND b.admin_path IS NOT NULL AND b.admin_path != ''";
+                } 
+                else {
+                    // ሁሉም (ዞን ራሱ - level 1)
+                    $sql .= " AND b.level = 1 AND b.admin_path IS NOT NULL AND b.admin_path != ''";
+                }
+                
+                // ሁለተኛው ማጣሪያ (የተመረጠው ዞን ID) ካለ
                 if ($secondSelect !== 'all' && $secondSelect !== '') {
-                    $sql .= " AND b.id = :second_select";
-                    $params['second_select'] = $secondSelect;
+                    $sql .= " AND v.zone_id = :zone_filter_id";
+                    $params['zone_filter_id'] = $secondSelect;
                 }
                 break;
 
@@ -463,7 +476,7 @@ public function getServiceYearReport($filters): array
         }
     }
 
-    // 5. 4ተኛው ማጣሪያ (fourth_select)
+    // 8. 4ተኛው ማጣሪያ (fourth_select)
     if (!empty($fourthSelect) && $fourthSelect !== 'all') {
         $sql .= " AND b.branch_type = :fourth_select";
         $params['fourth_select'] = $fourthSelect;
@@ -479,29 +492,6 @@ public function getServiceYearReport($filters): array
         'report_data' => $stmt->fetchAll(PDO::FETCH_ASSOC)
     ];
 }
-
-
-
-public function bureausgraph(?string $id = null): array
-{
-    $sql = "SELECT 
-                b.name AS Name, 
-                COALESCE(bt.type_in_am, b.branch_type) AS CallerName, 
-                COUNT(v.id) AS vehicle_count
-            FROM branches b
-            LEFT JOIN branch_type bt ON b.branch_type = bt.type_in_eng
-            LEFT JOIN vehicles v ON b.id = v.branch_id AND v.is_active = 1 
-            WHERE b.is_active = 1 AND b.branch_type!='memriya' 
-              AND b.functional_path IS NOT NULL 
-              AND b.functional_path != ''
-            GROUP BY b.id, b.name, b.branch_type, bt.type_in_am";
-            
-    $stmt = $this->db->prepare($sql);
-    $stmt->execute();
-
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-
 
 
 public function zonegraph(): array

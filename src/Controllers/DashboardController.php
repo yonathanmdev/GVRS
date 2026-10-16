@@ -275,6 +275,8 @@ public function report2controller(): void
     $secondSelect = $_GET['second_select'] ?? '';
     $thirdSelect  = $_GET['third_select'] ?? '';
     $fourthSelect = $_GET['fourth_select'] ?? '';
+    $zoneSubFilter  = $_GET['zone_sub_filter'] ?? ''; // 🌟 1. የዞን ንዑስ ማጣሪያውን እዚህ እንቀበላለን
+
 
     // 2. 1ኛው ሳጥን ሲመረጥ 2ተኛውን ዝርዝር እናመጣለን
     if ($reportType === 'regional') {
@@ -304,7 +306,8 @@ public function report2controller(): void
         'report_type'   => $reportType,
         'second_select' => $secondSelect,
         'third_select'  => $thirdSelect,   // 🌟 ዞን ሲመረጥ የሚገባው 3ተኛው ማጣሪያ እዚህ ተጨምሯል
-        'fourth_select' => $fourthSelect
+        'fourth_select' => $fourthSelect,
+         'zone_sub_filter' => $zoneSubFilter
     ]);
     // =========================================================================
 
