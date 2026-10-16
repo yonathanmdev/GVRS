@@ -292,7 +292,9 @@ public function findByUuidWithDetails(string $uuid): ?array
 
                 br.name       AS branch_name,
                 br.level      AS branch_level,
-                z.name        AS zone_name
+                z.name        AS zone_name,
+                br.branch_type AS branch_type,
+                br.functional_parent_id  AS branch_functional_parent_id
 
             FROM vehicles v
 
